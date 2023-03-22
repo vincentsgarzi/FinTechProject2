@@ -20,11 +20,10 @@ with st.sidebar:
     # create a dictionary for storing ticker weights
     weights = {}
 
+    # loop through selected tickers and prompt the user to input weights
     st.subheader('Ticker Weights:')
     st.caption(':blue[Please allot the weights to your chosen stock tickers.]')
     st.caption('_Note: The combined total must be equal to 1.0._')
-
-    # loop through selected tickers and prompt the user to input weights
     for ticker in selected_tickers:
         ticker_symbol, company_name = ticker.split(' - ')
         weight = st.slider(f'{ticker_symbol} Weight:', key=ticker_symbol, min_value=.0, max_value=1.0, value=0.0, step=.01)
@@ -39,6 +38,7 @@ with st.sidebar:
     # if the total weight is not equal to 100, show an error message
     if total_weight != 1.0:
         st.error(f'Total combined weight of the stocks in your portfolio is currently {total_weight:.2f} must be equal to 1.0.')
+        st.write(total_weight)
     
 # creates four tabs that will display on the webpage
 tab1, tab2, tab3, tab4 = st.tabs(['About','Portfolio Dashboard','Future Projected Returns', 'Robo Advisor'])
@@ -49,7 +49,7 @@ with tab1:
     import streamlit as st
 
     # Description
-    st.write("Our investment portfolio finanical application enables you to build and manage your investment portfolio. It is designed to help you make informed investment decisions and achieve your financial goals.")
+    st.write("Our investment portfolio finanical application enables you to build and manage your investment portfolio, and is designed to help you make informed investment decisions and achieve your financial goals.")
 
     # Portfolio Overview Section
     st.header("Portfolio Overview")
@@ -67,7 +67,7 @@ with tab1:
     # User-Friendly Interface Section
     st.header("User-Friendly Interface")
     st.write("Our platform is designed to be easy to use, even if you have no previous investment experience.")
-    st.write("With that said, we are committed to helping you achieve your financial goals. Whether you're looking to build a long-term investment portfolio or trade stocks for short-term gains, our platform provides you with the tools and resources you need to succeed. Enjoy!")
+    st.write("With that said, we are committed to helping you achieve your financial goals. Whether you're looking to build a long-term investment portfolio or trade stocks for short-term gains, our platform provides you with the tools and resources you need to succeed.")
 
 
 with tab2:
@@ -79,3 +79,5 @@ with tab3:
 
 with tab4:
     st.title('Robo Advisor')
+
+
