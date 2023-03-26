@@ -17,8 +17,7 @@ from Components.test_train import scaling
 from Components.model_select import model_selection
 from Components.expectedPerfCal import RecentPerfSummary 
 
-
-def model_iteration():
+def model_iteration(inputdata):
     #Creating an empty dataframe to save the performance summary 
     perforamance_summary=pd.DataFrame([])
 
@@ -26,7 +25,7 @@ def model_iteration():
 
         #Function call to subset the historical data with 24 months historty 
         #and creating dataframe with technical indicators
-        tickerdf=techinds(df_portfolio_year,ticker,50,100)
+        tickerdf=techinds(inputdata,ticker,50,100)
 
         #Function call for creating dataframe with target variable
         target=targetdf(tickerdf)
@@ -112,14 +111,14 @@ def model_iteration():
 
     return final_data_sorted
 
-def PriceSummary():
-    perforamance_summary_sorted=model_iteration()
+def PriceSummary(inputdata):
+    perforamance_summary_sorted=model_iteration(inputdata)
     
     final_summary=pd.DataFrame()
 
     for ticker in tickers:
         method=model_selection(ticker,perforamance_summary_sorted)
-        price, mean, stdev = RecentPerfSummary(ticker,df_portfolio_year)
+        price, mean, stdev = RecentPerfSummary(ticker,inputdata)
         result_list=list([ticker
                           ,method
                           ,price
@@ -189,6 +188,6 @@ df_portfolio_year = alpaca.get_bars(
 #Reformatting the index
 df_portfolio_year.index=pd.to_datetime(df_portfolio_year.index).date
 
-df=PriceSummary()
+df=PriceSummary(df_portfolio_year)
 
 print(df)
