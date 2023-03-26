@@ -14,14 +14,14 @@ load_dotenv('api.env')
 alpaca_api_key = os.getenv("ALPACA_API_KEY")
 alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
 
-tickers = ["AAPL", "TSLA", "MSFT"] #this will be gathered from sidebar eventually
+#tickers = ["AAPL", "TSLA", "MSFT"] #this will be gathered from sidebar eventually
 
-def gatherData(tickers):
+def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
   tickers_dfs = []
 
   today = date.today()
   timeframe = "1Day"
-  start = pd.Timestamp(today - DateOffset(years=2), tz="America/New_York").isoformat()
+  start = pd.Timestamp(today - DateOffset(years=5), tz="America/New_York").isoformat()
   end = pd.Timestamp(today, tz="America/New_York").isoformat()
 
   # Create the Alpaca API object
@@ -41,8 +41,9 @@ def gatherData(tickers):
       tickers_dfs.append(ticker)
   return tickers_dfs
 
-def concatDataframes(tickers_dfs):
+def concatDataframes(tickers_dfs, tickers):
   df_portfolio_year = pd.concat(tickers_dfs,axis=1, keys=tickers)
+  df_portfolio_year = df_portfolio_year.fillna(0)
   return df_portfolio_year
 
 def createSignals(tickers_dfs):
@@ -76,4 +77,4 @@ def createSignals(tickers_dfs):
 
   return signals_dfs
 
-print(createSignals(gatherData(tickers)))
+#print(createSignals(gatherData(tickers)))

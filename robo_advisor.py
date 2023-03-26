@@ -1,17 +1,41 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
+import os
+import pandas as pd
+import numpy as np
+import alpaca_trade_api as tradeapi
+from dotenv import load_dotenv
+from datetime import date
+from pathlib import Path
+from pandas import DateOffset
+from datetime import date, timedelta
+import plotly.express as px
+
+
+
+
+from Vinny.dmac import gatherData
+from Vinny.dmac import concatDataframes
+from Adam.functions import get_cleaned_tickers
+
 
 # sets the page configuration for Streamlit utilization
 st.set_page_config(page_title="Investment Application", page_icon=":earth_americas:")
 
+# calling the load_dotenv() function to retrieve information from the .env file
+load_dotenv()
+
+# gathering the api keys for the Alpaca API
+alpaca_api_key = os.getenv("ALPACA_API_KEY")
+alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
+
 # creates a sidebar that is used to compose the portfolio
 with st.sidebar:
     st.title('Portfolio Builder')
+    
     # load NYSE tickers
-    nyse_tickers = pd.read_csv(Path('./Resources/tickers.csv'))
-    nyse_tickers['Symbol_Name'] = nyse_tickers['Symbol'] + ' - ' + nyse_tickers['Name']
-    nyse_tickers = nyse_tickers['Symbol_Name'].tolist()
+    nyse_tickers = get_cleaned_tickers('./Resources/tickers.csv')
 
     # create a dropdown menu for selecting tickers
     st.subheader('Ticker Selection:')
@@ -27,7 +51,7 @@ with st.sidebar:
     # loop through selected tickers and prompt the user to input weights
     for ticker in selected_tickers:
         ticker_symbol, company_name = ticker.split(' - ')
-        weight = st.slider(f'{ticker_symbol} Weight:', key=ticker_symbol, min_value=.0, max_value=1.0, value=0.0, step=.01)
+        weight = st.slider(f'{ticker_symbol} Weight:', key=ticker_symbol, min_value=.0, max_value=1.0, value=0.0, step=.05)
         weights[ticker_symbol] = weight
 
     # create a list of the tickers to use in the Alpaca API call
@@ -41,12 +65,10 @@ with st.sidebar:
         st.error(f'Total combined weight of the stocks in your portfolio is currently {total_weight:.2f} must be equal to 1.0.')
     
 # creates four tabs that will display on the webpage
-tab1, tab2, tab3, tab4 = st.tabs(['About','Portfolio Dashboard','Future Projected Returns', 'Robo Advisor'])
-
+tab1, tab2, tab3 = st.tabs(['About', 'Portfolio Dashboard', 'Robo Advisor'])
 
 with tab1:
     st.title('About')
-    import streamlit as st
 
     # Description
     st.write("Our investment portfolio finanical application enables you to build and manage your investment portfolio. It is designed to help you make informed investment decisions and achieve your financial goals.")
@@ -73,9 +95,42 @@ with tab1:
 with tab2:
     st.title('Portfolio Dashboard')
     st.subheader('The following is an overview of your selcted portfolio and their weights.')
+    
+    try:
+        # calling the gatherData function to get the stock ticker data
+        market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
+        # concatanating the dataframe to visualize close history
+        concat_market_data = concatDataframes(market_data, ticker_keys)
+
+        # creating a dataframe to create a selectbox
+        time_periods = {
+        "5 years": 5 * 365,
+        "1 year": 365,
+        "6 months": 180,
+        "3 months": 90,
+        "7 days": 7}
+
+        selected_period = st.selectbox("Select a time period to visualize the historic close data of your portfolio.", list(time_periods.keys()))
+
+        # calculate the start date based on the selected time period
+        today = date.today()
+        start_date = today - timedelta(days=time_periods[selected_period])
+
+        # filter the dataframe to the selected time period
+        df_period = concat_market_data.loc[start_date:]
+
+        # concatanating the dataframe to only show the 'close' columns
+        close_df = pd.concat([df_period.loc[:, (ticker, 'close')] for ticker in ticker_keys], axis=1)
+        close_df = close_df.droplevel(axis=1, level=1)
+
+        # creating the plot to show the closing prices over a specific period of time
+        close_plot = px.line(close_df, labels={'variable':'Ticker', 'value':'Closing Price (USD)', 'timestamp':'Date'})
+        st.plotly_chart(close_plot)
+
+
+    except:
+        st.warning('Oops, no stock tickers were selected! Please go back to the sidebar to build your portfolio.')
 
 with tab3:
-    st.title('Future Projected Returns')
-
-with tab4:
-    st.title('Robo Advisor')
+      st.title('Robo Advisor')
+  
