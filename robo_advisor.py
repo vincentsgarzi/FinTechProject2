@@ -20,6 +20,7 @@ from Vinny.dmac import concatDataframes
 from Adam.functions import get_cleaned_tickers
 from Adam.functions import portfolio_breakdown
 from Adam.functions import plot_close_prices
+from Adam.functions import get_closing_prices
 
 
 
@@ -102,15 +103,15 @@ with tab1:
     st.write("Our platform is designed to be easy to use, even if you have no previous investment experience.")
     st.write("With that said, we are committed to helping you achieve your financial goals. Whether you're looking to build a long-term investment portfolio or trade stocks for short-term gains, our platform provides you with the tools and resources you need to succeed. Enjoy!")
 
-
 with tab2:
     st.title('Portfolio Dashboard')
-    st.subheader("Below, you'll find an overview of your selected investment portfolio, including weightings and historical close data. On the right-hand side, you'll also see pertinent news related to the portfolio you've constructed.")
-    st.title(' ')
-    col1, col2 = st.columns([4,1])
+    st.write("Below, you'll find an overview of your selected investment portfolio, including weightings and historical close data. You'll also see pertinent news related to the portfolio you've constructed.")
+    st.title('')
+    col1, col2 = st.columns([3,1], gap='large')
 
     with col1:
-        
+        st.subheader("Portfolio Makeup:")
+
         try:
             # calling the gatherData function to get the stock ticker data
             market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
@@ -127,11 +128,11 @@ with tab2:
         else:
             # creating a dataframe to create a selectbox
             time_periods = {
-            "5 years": 5 * 365,
-            "1 year": 365,
-            "6 months": 180,
-            "3 months": 90,
-            "7 days": 7}
+            "5 Years": 5 * 365,
+            "1 Year": 365,
+            "6 Months": 180,
+            "3 Months": 90,
+            "7 Days": 7}
                 
             sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
 
@@ -152,6 +153,20 @@ with tab2:
             close_plot = plot_close_prices(ticker_keys, concat_market_data, time_periods, selected_period)
 
             st.plotly_chart(close_plot, use_container_width=True)
+
+
+            tab_list = tab1, tab2, tab3, tab4, tab5 = st.tabs(time_periods)
+
+            for tab in tab_list:
+                if tab == [0]:
+                    selected_period = time_periods.keys
+
+    with col2:
+
+        st.subheader('Current Close Prices')
+        current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
+
+        st.dataframe(current_close_df, use_container_width=True)
 
 with tab3:
       st.title('Robo Advisor')

@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 from datetime import date, timedelta
+import alpaca_trade_api as tradeapi
 
 
 # function that returns the list of tickers and their names for use in the 'ticker selection' drop down
@@ -62,6 +63,28 @@ def plot_close_prices(ticker_keys, concat_market_data, time_periods, selected_pe
     close_plot = px.line(close_df, labels={'variable':'Ticker', 'value':'Closing Price (USD)', 'timestamp':'Date'})
 
     return close_plot
+
+
+def get_closing_prices(tickers, api_key, secret_key):
+    # Set up Alpaca API credentials
+    api = tradeapi.REST(api_key, secret_key)
+
+    # Get the most recent closing prices for the specified tickers
+    barsets = api.get_bars(tickers, '1D', limit=1)
+    closing_prices = {}
+    for ticker in tickers:
+        closing_prices[ticker] = barsets[0].c
+
+    # Convert the dictionary to a pandas DataFrame
+    df = pd.DataFrame.from_dict(closing_prices, orient='index', columns=['Closing Price (USD)'])
+    df.index.name = 'Ticker'
+
+    return df
+
+
+
+
+
 
 
 
