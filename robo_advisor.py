@@ -24,7 +24,7 @@ from Adam.functions import plot_close_prices
 
 
 # sets the page configuration for Streamlit utilization
-st.set_page_config(page_title="Investment Application", page_icon=":earth_americas:")
+st.set_page_config(page_title="Investment Application", page_icon=":earth_americas:", layout='wide')
 
 # calling the load_dotenv() function to retrieve information from the .env file
 load_dotenv()
@@ -105,17 +105,21 @@ with tab1:
 
 with tab2:
     st.title('Portfolio Dashboard')
-    st.subheader('The following is an overview of your selcted portfolio along with their weights and historic close data.')
-
-    col1, col2 = st.columns([2,1])
+    st.subheader("Below, you'll find an overview of your selected investment portfolio, including weightings and historical close data. On the right-hand side, you'll also see pertinent news related to the portfolio you've constructed.")
+    st.title(' ')
+    col1, col2 = st.columns([4,1])
 
     with col1:
+        
+        try:
+            # calling the gatherData function to get the stock ticker data
+            market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
 
-        # calling the gatherData function to get the stock ticker data
-        market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
+            # concatanating the dataframe to visualize close history
+            concat_market_data = concatDataframes(market_data, ticker_keys)
 
-        # concatanating the dataframe to visualize close history
-        concat_market_data = concatDataframes(market_data, ticker_keys)
+        except:
+            st.error('Must build your portfolio to proceed.')
 
         # error handling to ensure the user correctly input their data
         if total_weight != 1:
