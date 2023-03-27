@@ -5,17 +5,23 @@ from pandas.tseries.offsets import DateOffset
 # Import the finta Python library and the TA module
 import pandas as pd
 
-from Components.model_calls import supportvector
-from Components.model_calls import logistic
-from Components.model_calls import tree
 
-from Components.technicalind import techinds
-from Components.test_train import targetdf
-from Components.test_train import featuresdf
-from Components.test_train import train_test
-from Components.test_train import scaling
-from Components.model_select import model_selection
-from Components.expectedPerfCal import RecentPerfSummary 
+# from Components.model_calls import supportvector
+# from Components.model_calls import logistic
+# from Components.model_calls import tree
+# from Components.technicalind import techinds
+# from Components.test_train import targetdf
+# from Components.test_train import featuresdf
+# from Components.test_train import train_test
+# from Components.test_train import scaling
+# from Components.model_select import model_selection
+# from Components.expectedPerfCal import RecentPerfSummary
+
+from model_calls import *
+from technicalind import techinds
+from test_train import *
+from model_select import model_selection
+from expectedPerfCal import RecentPerfSummary
 
 def model_iteration(inputdata):
     #Creating an empty dataframe to save the performance summary 
