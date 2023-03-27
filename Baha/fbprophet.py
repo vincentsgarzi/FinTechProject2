@@ -57,4 +57,5 @@ def forecast_next_day(ticker):
 
 
 #Calling the def fubction
-forecast_next_day("AAPL")
+user = input("which ticker you want to forecast?") #this will be a drop down menu 
+print(forecast_next_day(user))
