@@ -39,18 +39,18 @@ def portfolio_breakdown(csv_path, weights):
     merged_df = pd.merge(portfolio_df, tickers_csv, on='Symbol')
 
     # create a pie chart of sector weights using Plotly
-    fig1 = px.pie(merged_df, values='Weight', names='Sector', title='Portfolio Breakdown by Sector')
-    fig2 = px.pie(merged_df, values='Weight', names='Industry', title='Portfolio Breakdown by Industry')
-    fig3 = px.pie(merged_df, values='Weight', names='Symbol', title='Portfolio Breakdown by Stock')
+    fig1 = px.pie(merged_df, values='Weight', names='Sector', title='by Sector')
+    fig2 = px.pie(merged_df, values='Weight', names='Industry', title='by Industry')
+    fig3 = px.pie(merged_df, values='Weight', names='Symbol', title='by Stock')
     return fig1, fig2, fig3
 
 
 # function that returns the line plot for the the historical close prices
-def plot_close_prices(ticker_keys, concat_market_data, time_periods, selected_period):
+def plot_close_prices(ticker_keys, concat_market_data, selected_period):
 
     # calculate the start date based on the selected time period
     today = date.today()
-    start_date = today - timedelta(days=time_periods[selected_period])
+    start_date = today - timedelta(days=selected_period)
 
     # filter the dataframe to the selected time period
     df_period = concat_market_data.loc[start_date:]

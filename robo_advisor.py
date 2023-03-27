@@ -107,67 +107,79 @@ with tab2:
     st.title('Portfolio Dashboard')
     st.write("Below, you'll find an overview of your selected investment portfolio, including weightings and historical close data. You'll also see pertinent news related to the portfolio you've constructed.")
     st.title('')
-    col1, col2 = st.columns([3,1], gap='large')
 
-    with col1:
-        st.subheader("Portfolio Makeup:")
+    try:
+        # calling the gatherData function to get the stock ticker data
+        market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
 
-        try:
-            # calling the gatherData function to get the stock ticker data
-            market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
+        # concatanating the dataframe to visualize close history
+        concat_market_data = concatDataframes(market_data, ticker_keys)
 
-            # concatanating the dataframe to visualize close history
-            concat_market_data = concatDataframes(market_data, ticker_keys)
+    except:
+        st.error('Must build your portfolio to proceed.')
 
-        except:
-            st.error('Must build your portfolio to proceed.')
+    # error handling to ensure the user correctly input their data
+    if total_weight != 1:
+        st.error('The sum of the weights in your portfolio must be equal to 1.0.')
+    else:
 
-        # error handling to ensure the user correctly input their data
-        if total_weight != 1:
-            st.error('The sum of the weights in your portfolio must be equal to 1.0.')
-        else:
-            # creating a dataframe to create a selectbox
-            time_periods = {
-            "5 Years": 5 * 365,
-            "1 Year": 365,
-            "6 Months": 180,
-            "3 Months": 90,
-            "7 Days": 7}
-                
-            sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
+        st.subheader('Historic Close Prices')
 
-            chart_options = ['Portfolio by Stock', 'Portfolio by Sector', 'Portfolio by Industry']
+        col1, col2 = st.columns([3,1], gap='large')
 
-            chart_choice = st.selectbox('Select how you wish to view your investment portfolio.', chart_options)
+        with col1:
+            
+            # creating a list to create tabs
+            time_periods = ["5 Years", "1 Year", "6 Months", "3 Months", "7 Days"]
 
-            # if-else statement to visualize their portfolio
-            if chart_choice == chart_options[0]:
-                st.plotly_chart(stock_pie, use_container_width=True)
-            elif chart_choice == chart_options[1]:
-                st.plotly_chart(sector_pie, use_container_width=True)
-            else:
-                st.plotly_chart(industry_pie, use_container_width=True)
+            # setting up the tabs to display appropriate charts
+            chart1, chart2, chart3, chart4, chart5 = st.tabs(time_periods)
 
-            selected_period = st.selectbox("Select a time period to visualize the historic close data of your portfolio.", list(time_periods.keys()))
-
-            close_plot = plot_close_prices(ticker_keys, concat_market_data, time_periods, selected_period)
-
-            st.plotly_chart(close_plot, use_container_width=True)
-
-
-            tab_list = tab1, tab2, tab3, tab4, tab5 = st.tabs(time_periods)
-
-            for tab in tab_list:
-                if tab == [0]:
-                    selected_period = time_periods.keys
+            # displaying the appropriate chart for its time frame using the 'plot_close_prices' function
+            with chart1:
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=1825)
+                st.plotly_chart(close_plot, use_container_width=True)
+            with chart2:
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=365)
+                st.plotly_chart(close_plot, use_container_width=True)
+            with chart3:
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=180)
+                st.plotly_chart(close_plot, use_container_width=True)
+            with chart4:
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=90)
+                st.plotly_chart(close_plot, use_container_width=True)
+            with chart5:
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=7)
+                st.plotly_chart(close_plot, use_container_width=True)
 
     with col2:
 
-        st.subheader('Current Close Prices')
-        current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
+        try:
+            st.subheader('Current Close Prices')
+            current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
-        st.dataframe(current_close_df, use_container_width=True)
+            st.dataframe(current_close_df, use_container_width=True)
+        
+        except:
+            None
+
+        st.subheader('Relevant News')
+
+    # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
+    sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
+
+    st.subheader('Portfolio Composition')
+
+    # putting the pi charts into respective columns
+    pi1, pi2, pi3 = st.columns(3, gap='large')
+
+    with pi1:
+        st.plotly_chart(stock_pie, use_container_width=True)
+    with pi2:
+        st.plotly_chart(sector_pie, use_container_width=True)
+    with pi3:
+        st.plotly_chart(industry_pie, use_container_width=True)
 
 with tab3:
-      st.title('Robo Advisor')
+    st.title('Robo Advisor')
   
