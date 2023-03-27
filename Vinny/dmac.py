@@ -1,11 +1,18 @@
+
+import sys
 import os
+os.chdir("..")
+sys.path.append(os.getcwd())
+from Kunal.app import PriceSummary
 import pandas as pd
 import numpy as np
 import alpaca_trade_api as tradeapi
+import datetime as dt
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from pandas import DateOffset
+
 
 # Load .env environment variables
 load_dotenv('api.env')
@@ -46,7 +53,7 @@ def concatDataframes(tickers_dfs, tickers):
   df_portfolio_year = df_portfolio_year.fillna(0)
   return df_portfolio_year
 
-def createSignals(tickers_dfs):
+def createSignals(tickers_dfs, priceSummary):
   # new list for signals and such
   signals_dfs = []
 
@@ -54,9 +61,20 @@ def createSignals(tickers_dfs):
   short_window = 50
   long_window = 100
 
+  # index for gathering projected close from proce summary
+  index = 0
+
+  tomorrow = dt.now() + timedelta(1)
+
   for ticker in tickers_dfs:
     # Grab index (date) and close from each df
     ticker = ticker.loc[:, ["close"]].copy()
+
+    # add projected close to dataframe
+    ticker.loc[len(ticker.index)] = [tomorrow, priceSummary[index]["expectedprice"]]
+
+    # increment index
+    index = index + 1
 
     # Make the short and long moving averages
     ticker["Short_SMA"] = ticker["close"].rolling(window=short_window).mean()
@@ -77,4 +95,31 @@ def createSignals(tickers_dfs):
 
   return signals_dfs
 
-#print(createSignals(gatherData(tickers)))
+alpaca=tradeapi.REST(alpaca_api_key,alpaca_secret_key,api_version="v2")
+
+# Set start and end dates of 3 years back from your current date
+# Alternatively, you can use an end date of 2020-08-07 and work 3 years back from that date
+import datetime as dt
+from pandas.tseries.offsets import DateOffset
+
+today= dt.date.today() #- DateOffset(days=1)
+start= today - DateOffset(years=5)
+start_date=start.date()
+timeframe='1Day'
+
+tickers = ["AAPL", "TSLA"] #this will be gathered from sidebar eventually
+
+tickers_dfs = []
+
+timeframe = "1Day"
+
+df_portfolio_year = alpaca.get_bars(
+    tickers,
+    timeframe,
+    start = start_date
+).df
+
+#Reformatting the index
+df_portfolio_year.index=pd.to_datetime(df_portfolio_year.index).date
+
+print(createSignals(gatherData(tickers, alpaca_api_key, alpaca_secret_key), PriceSummary(df_portfolio_year)))
