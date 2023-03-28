@@ -5,25 +5,13 @@ from pandas.tseries.offsets import DateOffset
 # Import the finta Python library and the TA module
 import pandas as pd
 
-
-# from Components.model_calls import supportvector
-# from Components.model_calls import logistic
-# from Components.model_calls import tree
-# from Components.technicalind import techinds
-# from Components.test_train import targetdf
-# from Components.test_train import featuresdf
-# from Components.test_train import train_test
-# from Components.test_train import scaling
-# from Components.model_select import model_selection
-# from Components.expectedPerfCal import RecentPerfSummary
-
 from model_calls import *
 from technicalind import techinds
 from test_train import *
 from model_select import model_selection
 from expectedPerfCal import RecentPerfSummary
 
-def model_iteration(inputdata):
+def model_iteration(tickers, inputdata):
     #Creating an empty dataframe to save the performance summary 
     perforamance_summary=pd.DataFrame([])
 
@@ -117,8 +105,8 @@ def model_iteration(inputdata):
 
     return final_data_sorted
 
-def PriceSummary(inputdata):
-    perforamance_summary_sorted=model_iteration(inputdata)
+def PriceSummary(tickers,inputdata):
+    perforamance_summary_sorted=model_iteration(tickers,inputdata)
     
     final_summary=pd.DataFrame()
 
@@ -148,52 +136,3 @@ def PriceSummary(inputdata):
                                                                       (final_summary['AvgReturns']-final_summary['StdDev']))
 
     return final_summary
-
-
-# Import the required libraries and dependencies
-import os
-import requests
-import json
-import pandas as pd
-from dotenv import load_dotenv
-import alpaca_trade_api as tradeapi
-
-# Load the environment variables from the .env file
-#by calling the load_dotenv function
-load_dotenv()
-
-# Set the variables for the Alpaca API and secret keys
-alpaca_api_key=os.getenv("ALPACA_API_KEY")
-alpaca_secret_key=os.getenv("ALPACA_SECRET_KEY")
-
-# Create the Alpaca tradeapi.REST object
-alpaca=tradeapi.REST(alpaca_api_key,alpaca_secret_key,api_version="v2")
-
-# Set start and end dates of 3 years back from your current date
-# Alternatively, you can use an end date of 2020-08-07 and work 3 years back from that date 
-import datetime as dt
-from pandas.tseries.offsets import DateOffset
-
-today= dt.date.today() #- DateOffset(days=1)
-start= today - DateOffset(years=5)
-start_date=start.date()
-timeframe='1Day'
-
-tickers = ["AAPL"] #this will be gathered from sidebar eventually
-
-tickers_dfs = []
-
-timeframe = "1Day"
-
-df_portfolio_year = alpaca.get_bars(
-    tickers,
-    timeframe,
-    start = start_date
-).df
-
-#Reformatting the index
-df_portfolio_year.index=pd.to_datetime(df_portfolio_year.index).date
-
-df=PriceSummary(df_portfolio_year)
-
-print(df)
