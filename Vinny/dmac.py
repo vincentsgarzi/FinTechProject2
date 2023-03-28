@@ -1,9 +1,12 @@
-
 import sys
 import os
-os.chdir("..")
+
+print(os.getcwd())
+
+os.chdir("../Kunal")
 sys.path.append(os.getcwd())
-from Kunal.app import PriceSummary
+from app import PriceSummary
+
 import pandas as pd
 import numpy as np
 import alpaca_trade_api as tradeapi
@@ -64,14 +67,24 @@ def createSignals(tickers_dfs, priceSummary):
   # index for gathering projected close from proce summary
   index = 0
 
-  tomorrow = dt.now() + timedelta(1)
+  tomorrow = dt.date.today() + DateOffset(days=1)
+  tomorrow = tomorrow.date()
+
+  print(tomorrow)
 
   for ticker in tickers_dfs:
     # Grab index (date) and close from each df
-    ticker = ticker.loc[:, ["close"]].copy()
 
+    ticker = ticker.reset_index()
+    print(ticker)
+
+    ticker = ticker.loc[:,["timestamp", "close"]].copy()
+    ticker.loc[len(ticker)] = [tomorrow, priceSummary.iloc[index]["expectedprice"]]
+
+    # ticker.index=pd.to_datetime(ticker.index).date
+
+    print(ticker)
     # add projected close to dataframe
-    ticker.loc[len(ticker.index)] = [tomorrow, priceSummary[index]["expectedprice"]]
 
     # increment index
     index = index + 1
