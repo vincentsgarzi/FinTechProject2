@@ -21,8 +21,6 @@ from app import PriceSummary
 alpaca_api_key = os.getenv("ALPACA_API_KEY")
 alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
 
-print(alpaca_secret_key)
-print(alpaca_api_key)
 
 alpaca = tradeapi.REST(
     alpaca_api_key,
@@ -43,7 +41,7 @@ timeframe = "1Day"
 
 
 # initializing the alpaca
-tickers = ["AAPL", "TSLA", "MSFT"] #this will be gathered from sidebar eventually
+tickers = ["AAPL", "TSLA", "MSFT","NVDA"] #this will be gathered from sidebar eventually
 tickers_dfs = []
 
 df_portfolio_year = alpaca.get_bars(
@@ -74,7 +72,39 @@ def forecast_next_day(ticker,inputdata):
 
 results_df = forecast_next_day(tickers,df_portfolio_year)
 
-df = PriceSummary(df_portfolio_year)
+df = PriceSummary(tickers,df_portfolio_year)
 
 print(results_df)
 print(df)
+
+def compare_prices(results_df, df):
+    comp_df = pd.DataFrame(columns=["Tickers","Actual Price","Best Price","Worst Price"])
+
+    for i in range(len(df)):
+        symbol = df.loc[i, 'Symbol']
+        expected_price = df.loc[i, 'expectedprice']
+        best_price = df.loc[i, 'expectedprice-high']
+        worst_price = df.loc[i, 'expectedprice-low']
+        #worst_price = df.loc[i, 'expectedprice']
+
+        for j in range(len(results_df)):
+            if results_df.loc[j, 'ticker'] == symbol:
+                predicted_price = results_df.loc[j, 'yhat']
+                yhat_best = results_df.loc[j, 'yhat_upper']
+                yhat_worst = results_df.loc[j, 'yhat_lower']
+
+                if predicted_price > expected_price:
+                    comp_df = comp_df.append({"Tickers": symbol,
+                                              "Actual Price": expected_price,
+                                              "Best Price": best_price,
+                                              "Worst Price": worst_price}, ignore_index=True)
+                else:
+                    comp_df = comp_df.append({"Tickers": symbol,
+                                              "Actual Price": predicted_price,
+                                              "Best Price": yhat_best,
+                                              "Worst Price": yhat_worst}, ignore_index=True)
+    return(comp_df)
+
+compare_prices(results_df,df)
+
+    
