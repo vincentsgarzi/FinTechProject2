@@ -1,9 +1,9 @@
 import sys
 import os
 
-os.chdir("../Kunal")
-sys.path.append(os.getcwd())
-from app import PriceSummary
+# os.chdir("../Kunal")
+# sys.path.append(os.getcwd())
+# from app import PriceSummary
 
 import pandas as pd
 import numpy as np

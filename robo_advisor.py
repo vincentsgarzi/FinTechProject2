@@ -11,17 +11,24 @@ from pathlib import Path
 from pandas import DateOffset
 from datetime import date, timedelta
 import plotly.express as px
+import sys
+import os
 
+# Change directory to the directory that contains the subdirectories
+os.chdir("../FinTechProject2")
 
+# Add subdirectories to sys.path
+sys.path.append("./Adam")
+sys.path.append("./Vinny")
+sys.path.append("./Kunal")
 
-
-from Vinny.dmac import gatherData
-from Vinny.dmac import concatDataframes
-from Adam.functions import get_cleaned_tickers
-from Adam.functions import portfolio_breakdown
-from Adam.functions import plot_close_prices
-from Adam.functions import get_closing_prices
-
+# Import modules
+from functions import get_cleaned_tickers
+from functions import portfolio_breakdown
+from functions import plot_close_prices
+from functions import get_closing_prices
+from dmac import gatherData
+from dmac import concatDataframes
 
 
 # sets the page configuration for Streamlit utilization
@@ -123,11 +130,11 @@ with tab2:
         st.error('The sum of the weights in your portfolio must be equal to 1.0.')
     else:
 
-        st.subheader('Historic Close Prices')
-
         col1, col2 = st.columns([3,1], gap='large')
 
         with col1:
+
+            st.subheader('Historic Close Prices')
             
             # creating a list to create tabs
             time_periods = ["5 Years", "1 Year", "6 Months", "3 Months", "7 Days"]
@@ -152,33 +159,33 @@ with tab2:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=7)
                 st.plotly_chart(close_plot, use_container_width=True)
 
-    with col2:
+        with col2:
 
-        try:
-            st.subheader('Current Close Prices')
-            current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
+            try:
+                st.subheader('Current Close Prices')
+                current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
-            st.dataframe(current_close_df, use_container_width=True)
-        
-        except:
-            None
+                st.dataframe(current_close_df, use_container_width=True)
+            
+            except:
+                None
 
-        st.subheader('Relevant News')
+            st.subheader('Relevant News')
 
-    # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
-    sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
+        # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
+        sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
 
-    st.subheader('Portfolio Composition')
+        st.subheader('Portfolio Composition')
 
-    # putting the pi charts into respective columns
-    pi1, pi2, pi3 = st.columns(3, gap='large')
+        # putting the pi charts into respective columns
+        pi1, pi2, pi3 = st.columns(3, gap='large')
 
-    with pi1:
-        st.plotly_chart(stock_pie, use_container_width=True)
-    with pi2:
-        st.plotly_chart(sector_pie, use_container_width=True)
-    with pi3:
-        st.plotly_chart(industry_pie, use_container_width=True)
+        with pi1:
+            st.plotly_chart(stock_pie, use_container_width=True)
+        with pi2:
+            st.plotly_chart(sector_pie, use_container_width=True)
+        with pi3:
+            st.plotly_chart(industry_pie, use_container_width=True)
 
 with tab3:
     st.title('Robo Advisor')

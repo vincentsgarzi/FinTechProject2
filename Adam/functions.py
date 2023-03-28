@@ -78,7 +78,6 @@ def get_closing_prices(tickers, api_key, secret_key):
     # Convert the dictionary to a pandas DataFrame
     df = pd.DataFrame.from_dict(closing_prices, orient='index', columns=['Closing Price (USD)'])
     df.index.name = 'Ticker'
-
     return df
 
 
