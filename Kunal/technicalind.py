@@ -13,9 +13,15 @@ def techinds(data,ticker,short_window,long_window):
     today= pd.to_datetime(dt.date.today())
     start= today - DateOffset(months=24)
     training_start_date=start.date()
-    indicators_df=data.loc[(data.index>=training_start_date) 
+
+    if type(data.index) is pd.DatetimeIndex:
+        data.index = data.index.date
+
+    # print(data)
+
+    indicators_df=data.loc[(data.index>=training_start_date)
                                         & (data['symbol']==ticker)].copy()
-    
+
     # Create additional technical indicators
     indicators_df["ssma"] = TA.SSMA(indicators_df)
     indicators_df["ema"] = TA.EMA(indicators_df, 50)

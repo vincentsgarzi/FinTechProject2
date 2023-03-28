@@ -27,8 +27,11 @@ from functions import get_cleaned_tickers
 from functions import portfolio_breakdown
 from functions import plot_close_prices
 from functions import get_closing_prices
+from app import PriceSummary
 from dmac import gatherData
 from dmac import concatDataframes
+from dmac import createSignals
+
 
 
 # sets the page configuration for Streamlit utilization
@@ -47,7 +50,7 @@ csv_path = './Resources/tickers.csv'
 # creates a sidebar that is used to compose the portfolio
 with st.sidebar:
     st.title('Portfolio Builder')
-    
+
     # load NYSE tickers
     nyse_tickers = get_cleaned_tickers(csv_path)
 
@@ -86,7 +89,7 @@ with st.sidebar:
 
     # create an entry box to prompt the user for the investment amount
     investment_amount = st.number_input("Investment Amount", min_value=0, step=500, value=1000)
-    
+
 # creates four tabs that will display on the webpage
 tab1, tab2, tab3 = st.tabs(['About', 'Portfolio Dashboard', 'Robo Advisor'])
 
@@ -122,6 +125,15 @@ with tab2:
         # concatanating the dataframe to visualize close history
         concat_market_data = concatDataframes(market_data, ticker_keys)
 
+        print(ticker_keys)
+        print(market_data)
+        priceSummary = PriceSummary(tickers = ticker_keys, inputdata = market_data)
+        print(priceSummary)
+        signals_df = createSignals(market_data, priceSummary)
+        print(signals_df)
+
+
+
     except:
         st.error('Must build your portfolio to proceed.')
 
@@ -135,7 +147,7 @@ with tab2:
         with col1:
 
             st.subheader('Historic Close Prices')
-            
+
             # creating a list to create tabs
             time_periods = ["5 Years", "1 Year", "6 Months", "3 Months", "7 Days"]
 
@@ -166,7 +178,7 @@ with tab2:
                 current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
                 st.dataframe(current_close_df, use_container_width=True)
-            
+
             except:
                 None
 
@@ -189,4 +201,28 @@ with tab2:
 
 with tab3:
     st.title('Robo Advisor')
-  
+
+    market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
+
+    # concatanating the dataframe to visualize close history
+    concat_market_data = concatDataframes(market_data, ticker_keys)
+
+
+    today = date.today()
+    timeframe = "1Day"
+    start = pd.Timestamp(today - DateOffset(years=5), tz="America/New_York").isoformat()
+    end = pd.Timestamp(today, tz="America/New_York").isoformat()
+
+    # Create the Alpaca API object
+    alpaca = tradeapi.REST(
+    alpaca_api_key,
+    alpaca_secret_key,
+    api_version="v2")
+
+    df_portfolio_year = alpaca.get_bars(
+        ticker_keys,
+        timeframe,
+        start
+    ).df
+    priceSummary = PriceSummary(tickers = ticker_keys, inputdata = df_portfolio_year)
+    signals_df = createSignals(market_data, priceSummary)

@@ -43,7 +43,7 @@ def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
   df_portfolio_year = alpaca.get_bars(
       tickers,
       timeframe,
-      start = start
+      start
   ).df
 
   for ticker in tickers:
