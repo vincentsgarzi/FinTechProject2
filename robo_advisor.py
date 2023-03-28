@@ -13,6 +13,7 @@ from datetime import date, timedelta
 import plotly.express as px
 import sys
 import os
+import streamlit_scrollable_textbox as stx
 
 # Change directory to the directory that contains the subdirectories
 os.chdir("../FinTechProject2")
@@ -27,11 +28,11 @@ from functions import get_cleaned_tickers
 from functions import portfolio_breakdown
 from functions import plot_close_prices
 from functions import get_closing_prices
-from app import PriceSummary
+from functions import get_news_headlines
 from dmac import gatherData
 from dmac import concatDataframes
+from app import PriceSummary
 from dmac import createSignals
-
 
 
 # sets the page configuration for Streamlit utilization
@@ -50,7 +51,7 @@ csv_path = './Resources/tickers.csv'
 # creates a sidebar that is used to compose the portfolio
 with st.sidebar:
     st.title('Portfolio Builder')
-
+    
     # load NYSE tickers
     nyse_tickers = get_cleaned_tickers(csv_path)
 
@@ -89,9 +90,9 @@ with st.sidebar:
 
     # create an entry box to prompt the user for the investment amount
     investment_amount = st.number_input("Investment Amount", min_value=0, step=500, value=1000)
-
+    
 # creates four tabs that will display on the webpage
-tab1, tab2, tab3 = st.tabs(['About', 'Portfolio Dashboard', 'Robo Advisor'])
+tab1, tab2, tab3, tab4 = st.tabs(['About', 'Portfolio Dashboard', 'What-If', 'Robo Advisor'])
 
 with tab1:
     st.title('About')
@@ -125,15 +126,6 @@ with tab2:
         # concatanating the dataframe to visualize close history
         concat_market_data = concatDataframes(market_data, ticker_keys)
 
-        print(ticker_keys)
-        print(market_data)
-        priceSummary = PriceSummary(tickers = ticker_keys, inputdata = market_data)
-        print(priceSummary)
-        signals_df = createSignals(market_data, priceSummary)
-        print(signals_df)
-
-
-
     except:
         st.error('Must build your portfolio to proceed.')
 
@@ -142,47 +134,50 @@ with tab2:
         st.error('The sum of the weights in your portfolio must be equal to 1.0.')
     else:
 
-        col1, col2 = st.columns([3,1], gap='large')
+        col1, col2 = st.columns([2.5,1], gap='large')
 
         with col1:
 
             st.subheader('Historic Close Prices')
-
+            
             # creating a list to create tabs
             time_periods = ["5 Years", "1 Year", "6 Months", "3 Months", "7 Days"]
+            num_days = [2555, 265, 180, 90, 7]
 
             # setting up the tabs to display appropriate charts
             chart1, chart2, chart3, chart4, chart5 = st.tabs(time_periods)
 
             # displaying the appropriate chart for its time frame using the 'plot_close_prices' function
             with chart1:
-                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=1825)
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[0])
                 st.plotly_chart(close_plot, use_container_width=True)
             with chart2:
-                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=365)
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[1])
                 st.plotly_chart(close_plot, use_container_width=True)
             with chart3:
-                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=180)
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[2])
                 st.plotly_chart(close_plot, use_container_width=True)
             with chart4:
-                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=90)
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[3])
                 st.plotly_chart(close_plot, use_container_width=True)
             with chart5:
-                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=7)
+                close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[4])
                 st.plotly_chart(close_plot, use_container_width=True)
 
         with col2:
 
-            try:
-                st.subheader('Current Close Prices')
-                current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
+            st.subheader('Current Close Prices')
+            current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
-                st.dataframe(current_close_df, use_container_width=True)
-
-            except:
-                None
+            st.dataframe(current_close_df, use_container_width=True)
+            
+            st.title('')
 
             st.subheader('Relevant News')
+
+            news = get_news_headlines(tickers=ticker_keys, api_key=alpaca_api_key, secret_key=alpaca_secret_key)
+
+
 
         # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
         sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
@@ -200,9 +195,12 @@ with tab2:
             st.plotly_chart(industry_pie, use_container_width=True)
 
 with tab3:
+    st.title('What-If')
+
+with tab4:
     st.title('Robo Advisor')
 
-    market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
+    market_data = gatherData(tickers=ticker_keys, alpaca_api_key=alpaca_api_key, alpaca_secret_key=alpaca_secret_key)
 
     # concatanating the dataframe to visualize close history
     concat_market_data = concatDataframes(market_data, ticker_keys)
@@ -226,3 +224,4 @@ with tab3:
     ).df
     priceSummary = PriceSummary(tickers = ticker_keys, inputdata = df_portfolio_year)
     signals_df = createSignals(market_data, priceSummary)
+  

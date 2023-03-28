@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.express as px
 from datetime import date, timedelta
 import alpaca_trade_api as tradeapi
+import streamlit as st
+import streamlit_scrollable_textbox as stx
 
 
 # function that returns the list of tickers and their names for use in the 'ticker selection' drop down
@@ -66,19 +68,39 @@ def plot_close_prices(ticker_keys, concat_market_data, selected_period):
 
 
 def get_closing_prices(tickers, api_key, secret_key):
+    # set up Alpaca API credentials
+    api = tradeapi.REST(api_key, secret_key)
+
+    # get the most recent closing prices for the specified tickers
+    barsets = api.get_bars(tickers, '1D').df
+    barsets = barsets.set_index('symbol').rename_axis('Ticker')
+
+    # adjusting the datafram to only show the most recent close and the ticker
+    barsets = barsets.drop(columns=['open', 'high', 'low','volume', 'trade_count', 'vwap'])
+    barsets = barsets.rename(columns={'close':'Closing Price (USD)'})
+    return barsets
+
+
+def get_news_headlines(tickers, api_key, secret_key):
+
     # Set up Alpaca API credentials
     api = tradeapi.REST(api_key, secret_key)
 
-    # Get the most recent closing prices for the specified tickers
-    barsets = api.get_bars(tickers, '1D', limit=1)
-    closing_prices = {}
+    # Retrieve one news article for each ticker
+    news_items = []
     for ticker in tickers:
-        closing_prices[ticker] = barsets[0].c
+        news = api.get_news(ticker, limit=1)
+        if news:
+            item = news[0]
+            news_items.append({
+                'Ticker': st.write(ticker),
+                'Headline': st.caption(item.headline),
+                'Link': st.markdown(item.url, unsafe_allow_html=True)
+            })
 
-    # Convert the dictionary to a pandas DataFrame
-    df = pd.DataFrame.from_dict(closing_prices, orient='index', columns=['Closing Price (USD)'])
-    df.index.name = 'Ticker'
-    return df
+        
+
+
 
 
 
