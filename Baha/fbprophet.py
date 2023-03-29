@@ -24,6 +24,7 @@ def forecast_next_day(tickers,inputdata):
         results_df = results_df.append({'ticker': ticker, 'yhat': forecast_yhats[0],
                                         'yhat_lower': forecast_yhats[1], 'yhat_upper': forecast_yhats[2]},
                                         ignore_index=True)
+        #results_df = results_df.set_index('ticker')
     return results_df
 
 
@@ -48,9 +49,11 @@ def compare_prices(results_df, df):
                                               "Actual Price": expected_price,
                                               "Best Price": best_price,
                                               "Worst Price": worst_price}, ignore_index=True)
+                    comp_df = comp_df.set_index('Tickers')
                 else:
                     comp_df = comp_df.append({"Tickers": symbol,
                                               "Actual Price": predicted_price,
                                               "Best Price": yhat_best,
                                               "Worst Price": yhat_worst}, ignore_index=True)
+                    comp_df = comp_df.set_index('Tickers')
     return(comp_df)

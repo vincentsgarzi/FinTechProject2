@@ -36,6 +36,7 @@ from app import PriceSummary
 from dmac import createSignals
 from fbprophet import compare_prices
 from fbprophet import forecast_next_day
+from portfolio import portfolio_returns
 
 
 # sets the page configuration for Streamlit utilization
@@ -215,6 +216,8 @@ with tab3:
     st.title('What-If')
     st.write('Discover the potential value of your investment portfolio with our advanced analysis tool. It takes the portfolio you built and visualizes how your investments **:blue[could have]** grown over various time periods. It provides valuable insights into the performance of your investments and helps you make informed decisions about your financial future.')
 
+    #return_plot, return_value = 
+
 with tab4:
     st.title('Robo Advisor')
     st.write('Our robo-advisor tab uses machine learning and simple moving averages to provide you with real-time recommendations on when to buy or sell specific stocks in your portfolio. The red and green arrows indicate whether you should sell or buy a stock, respectively, based on our analysis of market trends and performance data.')
@@ -232,18 +235,28 @@ with tab4:
             ticker = market_data[market_data['symbol']==ticker].drop('symbol', axis=1)
             tickers_dfs.append(ticker)
 
+        # calling the 'createSignals' function to return a dataframe with the buy and sell datax
         signals_df = createSignals(tickers_dfs, comp_df)
-
 
         # calling the robo_graphs function to visualize when the user should buy/sell
         charts_dict = robo_graphs(signals_df, ticker_keys)
 
-        side1, side2 = st.columns([2,.5], gap='large')
+        side1, side2 = st.columns([2,.75], gap='large')
 
         with side1:
 
             ticker_symbol = st.selectbox("Select Ticker Symbol", ticker_keys)
 
             st.title('')
-            
+
             st.plotly_chart(charts_dict[ticker_symbol], use_container_width=True)
+
+        with side2:
+
+            st.subheader('Expected Prices')
+            st.write('Below are the expected future prices with a 95% confidence of the stocks in your portfolio.')
+            st.dataframe(comp_df, use_container_width=True)
+            st.title('')
+            st.image('Images/robot.png', use_column_width=True)
+
+
