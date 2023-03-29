@@ -25,9 +25,13 @@ The team created a Trading Bot which allows the user to review stocks of their i
 
 `alpaca_trade_api` provides a simple and easy-to-use interface for accessing the Alpaca brokerage platform's trading and account management services.
 
-`os`
+`dotenv` a popular third-party Python library that allows you to load environment variables from a .env file into your Python project.
 
-`requests`
+`requests` is a popular third-party Python library that makes it easy to send HTTP/1.1 requests using Python
+
+`plotly`  provides an interactive web-based graphical user interface for creating and sharing data visualizations
+
+`prophet` provides an easy-to-use interface for fitting and making predictions with time series data using additive models
 
 `finta` library is used for creating technical indicators on stock returns. 
 
@@ -53,6 +57,21 @@ To install streamlit use
 pip install streamlit
 ```
 
+To install plotly
+```python
+pip install plotly
+```
+
+To install requests library
+```python
+pip install requests
+```
+
+To install dotenv library
+```python
+pip install python-dotenv
+```
+
 To install finta library use 
 ```python
 pip install finta
@@ -67,9 +86,6 @@ If the terminal does not display scikit-learn use the command below to install t
 ```python
 pip install -U scikit-learn
 ```
-
-
-
 
 ## Usage
 
@@ -102,19 +118,12 @@ The plots below highlight the limitation of timeseries forecast for stock prices
 
 ![ProphetForecast](./Charts/prophetforecast.png)
 
-![ProphetForecastZoom](./Charts/prophetforecastzoom.png)
-
 The team also researched another popular forecasting methodology called ARIMA modeling- AutoRegressive Integrated Moving Average. The successful use of ARIMA modeling depends on the time series data meeting certain key assumptions like linear relationship between the current value of the variable with it's lagged value, stationarity of the series overtime and a linear relation between current value and past forecast errors. The nature of the time series is defined in terms of hyperparameters that is associated with each of the base assumptions. It is worth noting that a generalized approach to forecasting prices of all stocks using a fixed set of parameters is bound to reult in inaccuracies.
 
-The plot below illustrate the plots that need to be reviewed on a case basis to understand the stationarity of time series and auto-correlation.
+The plot below illustrate the plots associated with stationarity and auto-correlation in time-series.
 
-![Price Stationarity](./Charts/PriceStationarity.png)
+![Price Stationarity](./Charts/ARIMAModelingSummary.png)
 
-![Returns Stationarity](./Charts/ReturnsStationarity.png)
-
-![Price AutoCorrlation](./Charts/StockPriceAutoCorrelation.png)
-
-![Returns AutoCorrlation](./Charts/ReturnsAutoCorrelation.png)
 
 ## Next Steps
 Future application updates will include
