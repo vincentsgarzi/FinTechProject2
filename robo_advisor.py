@@ -233,7 +233,7 @@ with tab3:
         number_days = int(time_number) * periods[time_word]
 
         # calling the portfolio_returns function to get probable returns and the plot
-        return_plot, return_num = portfolio_returns(concat_market_data, ticker_keys, ticker_weights, investment_amount, selected_period=number_days)
+        return_num, return_plot = portfolio_returns(concat_market_data, ticker_keys, ticker_weights, investment_amount, selected_period=number_days)
         co1, co2 = st.columns([2.5, .9], gap='large')
 
         with co1:
@@ -285,9 +285,12 @@ with tab4:
         with side2:
 
             st.subheader('Expected Prices')
+            st.dataframe(signals_df)
             st.write('Below are the expected future prices with a 95% confidence of the stocks in your portfolio.')
             st.dataframe(comp_df, use_container_width=True)
             st.title('')
             st.image('Images/robot.png', use_column_width=True)
+
+
 
 

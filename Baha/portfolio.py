@@ -8,7 +8,7 @@ import os
 import plotly.express as px
 
 # Define the function with input arguments: inputdata, ticker, weights, init_investment, selected_period
-def portfolio_returns(inputdata, ticker, weights, init_investment, selected_period):
+def portfolio_returns(inputdata, tickers, weights, init_investment, selected_period):
     
     # Get today's date
     today = dt.date.today()
