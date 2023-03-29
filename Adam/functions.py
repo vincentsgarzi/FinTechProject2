@@ -6,7 +6,8 @@ from datetime import date, timedelta
 import alpaca_trade_api as tradeapi
 import streamlit as st
 import streamlit_scrollable_textbox as stx
-
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # function that returns the list of tickers and their names for use in the 'ticker selection' drop down
 def get_cleaned_tickers(csv_path):
@@ -99,57 +100,50 @@ def get_news_headlines(tickers, api_key, secret_key):
             })
 
 
-def robo_graphs(signals_df, tickers):
-    
-
+def robo_graphs(signals_dfs, tickers):
     # index for grabbing ticker of security from original list
     index = 0
 
-    for ticker in signals_df:
+    for ticker in signals_dfs:
         # buy timing
-        entry = ticker[ticker["Entry/Exit"] == 1.0]["close"].hvplot.scatter(
-            title=tickers[index],
-            color='green',
-            marker='^',
-            size=200,
-            legend=False,
-            ylabel='Price (usd)',
-            width=1000,
-            height=400
-        )
+        buy_points = ticker[ticker["Entry/Exit"] == 1.0]["close"]
+        entry = go.Scatter(x=buy_points.index, y=buy_points, name="Buy", mode="markers",
+                           marker=dict(color="green", symbol="triangle-up", size=10))
+
+        # sell timing
+        sell_points = ticker[ticker["Entry/Exit"] == -1.0]["close"]
+        exit = go.Scatter(x=sell_points.index, y=sell_points, name="Sell", mode="markers",
+                           marker=dict(color="red", symbol="triangle-down", size=10))
+
+        # stock price
+        security_close = go.Scatter(x=ticker.index, y=ticker["close"], name="Close", mode="lines",
+                                     line=dict(color="lightgray"))
+
+        # moving averages
+        moving_avgs = go.Scatter(x=ticker.index, y=ticker["Short_SMA"], name="Short SMA", mode="lines",
+                                  line=dict(color="blue"))
+        moving_avgs2 = go.Scatter(x=ticker.index, y=ticker["Long_SMA"], name="Long SMA", mode="lines",
+                                   line=dict(color="orange"))
+
+        # create subplot with 2 rows and 1 column
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05)
+
+        # add traces to subplot
+        fig.add_trace(security_close, row=1, col=1)
+        fig.add_trace(moving_avgs, row=1, col=1)
+        fig.add_trace(moving_avgs2, row=1, col=1)
+        fig.add_trace(entry, row=1, col=1)
+        fig.add_trace(exit, row=1, col=1)
+
+        # set subplot layout and axis titles
+        fig.update_layout(title=tickers[index], height=800, width=1000, showlegend=False)
+        fig.update_yaxes(title_text="Price (usd)", row=1, col=1)
+        fig.update_yaxes(title_text="Price (usd)", row=2, col=1)
 
         index = index + 1
 
-        # sell timing
-        exit = ticker[ticker["Entry/Exit"] == -1.0]["close"].hvplot.scatter(
-            color='red',
-            marker='v',
-            size=200,
-            legend=False,
-            ylabel='Price (usd)',
-            width=1000,
-            height=400
-        )
-
-        # stock price
-        security_close = ticker[["close"]].hvplot(
-            line_color='lightgray',
-            ylabel='Price (usd)',
-            width=1000,
-            height=400
-        )
-
-        # moving averages
-        moving_avgs = ticker[["Short_SMA", "Long_SMA"]].hvplot(
-            ylabel='Price (usd)',
-            width=1000,
-            height=400
-        )
-
-        # combine plots
-        entry_exit_plot = security_close * moving_avgs * entry * exit
-        return (entry_exit_plot)
-
+        # show plot
+        fig.show()
         
 
 

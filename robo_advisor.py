@@ -233,5 +233,7 @@ with tab4:
     comp_df = compare_prices(nextDay, priceSummary)
     signals_df = createSignals(market_data, priceSummary)
 
-    plot = robo_graphs(signals_df=signals_df, tickers=ticker_keys)
+    st.plotly_chart(robo_graphs(signals_df=signals_df, tickers=ticker_keys))
+
+
 
