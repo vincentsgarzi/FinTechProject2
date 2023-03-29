@@ -98,6 +98,8 @@ with st.sidebar:
 tab1, tab2, tab3, tab4 = st.tabs(['About', 'Portfolio Dashboard', 'What-If', 'Robo Advisor'])
 
 with tab1:
+
+    st.image('Images/finance_banner.png', use_column_width=True, )
     st.title('About Us')
 
     # Description
@@ -196,6 +198,8 @@ with tab2:
         with col2:
 
             st.subheader('Current Close Prices')
+
+            # calling the 'get_closing_prices' function to retrieve a dataframe of the closing prices for each ticker the user selected
             current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
             st.dataframe(current_close_df, use_container_width=True)
@@ -204,6 +208,7 @@ with tab2:
 
             st.subheader('Market News')
 
+            # calling the 'get_news_headlines' function to 
             news = get_news_headlines(tickers=ticker_keys, api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
 with tab3:
@@ -212,9 +217,11 @@ with tab3:
 
 with tab4:
     st.title('Robo Advisor')
+    st.write('Our robo-advisor tab uses machine learning and simple moving averages to provide you with real-time recommendations on when to buy or sell specific stocks in your portfolio. The red and green arrows indicate whether you should sell or buy a stock, respectively, based on our analysis of market trends and performance data.')
+    st.write('You can visualize each stock in your portfolio by selecting it from the dropdown menu. Our data-driven recommendations take the guesswork out of investing and help you make informed decisions to optimize your portfolio for maximum returns.')
 
+    st.title('')
     if len(ticker_keys) != 0:
-        market_data = gatherData(ticker_keys, alpaca_api_key, alpaca_secret_key)
 
         priceSummary = PriceSummary(ticker_keys, market_data)
         nextDay = forecast_next_day(ticker_keys, market_data)
@@ -227,4 +234,16 @@ with tab4:
 
         signals_df = createSignals(tickers_dfs, comp_df)
 
-        st.plotly_chart(robo_graphs(signals_df, ticker_keys))
+
+        # calling the robo_graphs function to visualize when the user should buy/sell
+        charts_dict = robo_graphs(signals_df, ticker_keys)
+
+        side1, side2 = st.columns([2,.5], gap='large')
+
+        with side1:
+
+            ticker_symbol = st.selectbox("Select Ticker Symbol", ticker_keys)
+
+            st.title('')
+            
+            st.plotly_chart(charts_dict[ticker_symbol], use_container_width=True)

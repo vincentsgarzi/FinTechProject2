@@ -99,8 +99,10 @@ def get_news_headlines(tickers, api_key, secret_key):
             })
 
 
+
 def robo_graphs(signals_dfs, tickers):
-    # index for grabbing ticker of security from original list
+    charts = {}
+
     index = 0
 
     for ticker in signals_dfs:
@@ -137,12 +139,20 @@ def robo_graphs(signals_dfs, tickers):
         # set subplot layout and axis titles
         fig.update_layout(title=tickers[index], height=800, width=1000, showlegend=False)
         fig.update_yaxes(title_text="Price (usd)", row=1, col=1)
-        fig.update_yaxes(title_text="Price (usd)", row=2, col=1)
+        fig.update_xaxes(title_text='Date')
 
         index = index + 1
 
-        # show plot
-        fig.show()
+        # add the chart to the dictionary
+        charts[tickers[index-1]] = fig
+
+    # return the dictionary of charts
+    return charts
+
+
+
+
+
 
 
 
