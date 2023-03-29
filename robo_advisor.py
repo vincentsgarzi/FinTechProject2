@@ -213,8 +213,6 @@ with tab3:
 with tab4:
     st.title('Robo Advisor')
 
-    ticker_keys = ["AAPL"]
-
     if len(ticker_keys) != 0:
         market_data = gatherData(ticker_keys, alpaca_api_key, alpaca_secret_key)
 
@@ -228,7 +226,5 @@ with tab4:
             tickers_dfs.append(ticker)
 
         signals_df = createSignals(tickers_dfs, comp_df)
-
-        print(signals_df)
 
         st.plotly_chart(robo_graphs(signals_df, ticker_keys))
