@@ -41,9 +41,9 @@ def portfolio_breakdown(csv_path, weights):
     merged_df = pd.merge(portfolio_df, tickers_csv, on='Symbol')
 
     # create a pie chart of sector weights using Plotly
-    fig1 = px.pie(merged_df, values='Weight', names='Sector', title='by Sector')
-    fig2 = px.pie(merged_df, values='Weight', names='Industry', title='by Industry')
-    fig3 = px.pie(merged_df, values='Weight', names='Symbol', title='by Stock')
+    fig1 = px.pie(merged_df, values='Weight', names='Sector', title='by Sector', height=350, width=500)
+    fig2 = px.pie(merged_df, values='Weight', names='Industry', title='by Industry', height=350, width=500 )
+    fig3 = px.pie(merged_df, values='Weight', names='Symbol', title='by Stock', height=350, width=500)
     return fig1, fig2, fig3
 
 
@@ -97,6 +97,58 @@ def get_news_headlines(tickers, api_key, secret_key):
                 'Headline': st.caption(item.headline),
                 'Link': st.markdown(item.url, unsafe_allow_html=True)
             })
+
+
+def robo_graphs(signals_df, tickers):
+    
+
+    # index for grabbing ticker of security from original list
+    index = 0
+
+    for ticker in signals_df:
+        # buy timing
+        entry = ticker[ticker["Entry/Exit"] == 1.0]["close"].hvplot.scatter(
+            title=tickers[index],
+            color='green',
+            marker='^',
+            size=200,
+            legend=False,
+            ylabel='Price (usd)',
+            width=1000,
+            height=400
+        )
+
+        index = index + 1
+
+        # sell timing
+        exit = ticker[ticker["Entry/Exit"] == -1.0]["close"].hvplot.scatter(
+            color='red',
+            marker='v',
+            size=200,
+            legend=False,
+            ylabel='Price (usd)',
+            width=1000,
+            height=400
+        )
+
+        # stock price
+        security_close = ticker[["close"]].hvplot(
+            line_color='lightgray',
+            ylabel='Price (usd)',
+            width=1000,
+            height=400
+        )
+
+        # moving averages
+        moving_avgs = ticker[["Short_SMA", "Long_SMA"]].hvplot(
+            ylabel='Price (usd)',
+            width=1000,
+            height=400
+        )
+
+        # combine plots
+        entry_exit_plot = security_close * moving_avgs * entry * exit
+        return (entry_exit_plot)
 
         
 

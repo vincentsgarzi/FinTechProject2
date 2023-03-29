@@ -10,7 +10,7 @@ import plotly as px
 
 
 
-def portfolio_returns(inputdata,ticker,weights, init_investment):
+def portfolio_returns(inputdata,tickers,weights, init_investment):
     closing_prices_df = pd.DataFrame()
     for ticker in tickers:
         closing_prices_df[ticker] = inputdata[ticker]["close"]

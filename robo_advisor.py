@@ -29,6 +29,7 @@ from functions import portfolio_breakdown
 from functions import plot_close_prices
 from functions import get_closing_prices
 from functions import get_news_headlines
+from functions import robo_graphs
 from dmac import gatherData
 from dmac import concatDataframes
 from app import PriceSummary
@@ -95,24 +96,31 @@ with st.sidebar:
 tab1, tab2, tab3, tab4 = st.tabs(['About', 'Portfolio Dashboard', 'What-If', 'Robo Advisor'])
 
 with tab1:
-    st.title('About')
+    st.title('About Us')
 
     # Description
     st.write("Our investment portfolio finanical application enables you to build and manage your investment portfolio. It is designed to help you make informed investment decisions and achieve your financial goals.")
 
+    st.title('')
+
     # Portfolio Overview Section
-    st.header("Portfolio Overview")
-    st.write("Our Portfolio Dashboard tab provides you with real-time information about your investment portfolio. You can view the current status of your investments and get access to the latest news and analysis about the stocks in your portfolio. This feature helps you stay up-to-date on the latest market trends and make informed decisions about your investment strategy.")
-    st.write("This tab also offers a detailed breakdown of your portfolio, which provides you with a comprehensive overview of your investment allocations. You can easily see how much you've invested in each stock, sector, and asset class, allowing you to make any necessary adjustments to your portfolio based on your financial goals and risk tolerance.")
+    with st.expander("Portfolio Overview"):
+        st.write("Our Portfolio Dashboard tab provides you with real-time information about your investment portfolio. You can view the current status of your investments and get access to the latest news and analysis about the stocks in your portfolio. This feature helps you stay up-to-date on the latest market trends and make informed decisions about your investment strategy.")
+        st.write("This tab also offers a detailed breakdown of your portfolio, which provides you with a comprehensive overview of your investment allocations. You can easily see how much you've invested in each stock, sector, and asset class, allowing you to make any necessary adjustments to your portfolio based on your financial goals and risk tolerance.")
+
+    # What If Section
+    with st.expander("What-If"):
+        st.write("The 'What If' tab is a web tool that helps you see how your portfolio would have performed if you had invested it over different time periods in the past.")
+        st.write('It uses sophisticated algorithms and data analysis techniques to give you a clear picture of the potential value of your portfolio. By theorizing how your investments would have performed over time, you can gain valuable insights into their historical performance and make more informed decisions about future investment strategies.')
 
     # Robo Advisor Section
-    st.header("Robo Advisor")
-    st.write("Our machine learning algorithms and robo advisor feature provide you with a powerful tool to automatically trade the stocks in your portfolio. Our algorithms use the latest data analysis techniques to identify investment opportunities and help you make profitable trades. This feature allows you to take advantage of the latest market trends without spending countless hours analyzing market data.")
+    with st.expander("Robo Advisor"):
+        st.write("Our machine learning algorithms and robo advisor feature provide you with a powerful tool to automatically trade the stocks in your portfolio. Our algorithms use the latest data analysis techniques to identify investment opportunities and help you make profitable trades. This feature allows you to take advantage of the latest market trends without spending countless hours analyzing market data.")
 
     # User-Friendly Interface Section
-    st.header("User-Friendly Interface")
-    st.write("Our platform is designed to be easy to use, even if you have no previous investment experience.")
-    st.write("With that said, we are committed to helping you achieve your financial goals. Whether you're looking to build a long-term investment portfolio or trade stocks for short-term gains, our platform provides you with the tools and resources you need to succeed. Enjoy!")
+    with st.expander("User-Friendly Interface"):
+        st.write("Our platform is designed to be easy to use, even if you have no previous investment experience.")
+        st.write("With that said, we are committed to helping you achieve your financial goals. Whether you're looking to build a long-term investment portfolio or trade stocks for short-term gains, our platform provides you with the tools and resources you need to succeed. Enjoy!")
 
 with tab2:
     st.title('Portfolio Dashboard')
@@ -133,6 +141,20 @@ with tab2:
     if total_weight != 1:
         st.error('The sum of the weights in your portfolio must be equal to 1.0.')
     else:
+        # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
+        sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
+
+        st.subheader('Portfolio Composition')
+
+        # putting the pi charts into respective columns
+        pi1, pi2, pi3 = st.columns(3, gap='medium')
+
+        with pi1:
+            st.plotly_chart(stock_pie, use_container_width=True)
+        with pi2:
+            st.plotly_chart(sector_pie, use_container_width=True)
+        with pi3:
+            st.plotly_chart(industry_pie, use_container_width=True)
 
         col1, col2 = st.columns([2.5,1], gap='large')
 
@@ -173,37 +195,18 @@ with tab2:
             
             st.title('')
 
-            st.subheader('Relevant News')
+            st.subheader('Market News')
 
             news = get_news_headlines(tickers=ticker_keys, api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
 
 
-        # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
-        sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
-
-        st.subheader('Portfolio Composition')
-
-        # putting the pi charts into respective columns
-        pi1, pi2, pi3 = st.columns(3, gap='large')
-
-        with pi1:
-            st.plotly_chart(stock_pie, use_container_width=True)
-        with pi2:
-            st.plotly_chart(sector_pie, use_container_width=True)
-        with pi3:
-            st.plotly_chart(industry_pie, use_container_width=True)
-
 with tab3:
     st.title('What-If')
+    st.write('Discover the potential value of your investment portfolio with our advanced analysis tool. It takes the portfolio you built and visualizes how your investments **:blue[could have]** grown over various time periods. It provides valuable insights into the performance of your investments and helps you make informed decisions about your financial future.')
 
 with tab4:
     st.title('Robo Advisor')
-
-    market_data = gatherData(tickers=ticker_keys, alpaca_api_key=alpaca_api_key, alpaca_secret_key=alpaca_secret_key)
-
-    # concatanating the dataframe to visualize close history
-    concat_market_data = concatDataframes(market_data, ticker_keys)
 
 
     today = date.today()
@@ -224,4 +227,7 @@ with tab4:
     ).df
     priceSummary = PriceSummary(tickers = ticker_keys, inputdata = df_portfolio_year)
     signals_df = createSignals(market_data, priceSummary)
-  
+
+    plot = robo_graphs(signals_df=signals_df, tickers=ticker_keys)
+
+    
