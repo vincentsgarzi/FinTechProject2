@@ -131,8 +131,8 @@ def PriceSummary(tickers,inputdata):
 
     final_summary['expectedprice']=final_summary['LatestPrice']*(1+final_summary['PredictedSignal']*final_summary['AvgReturns'])
     final_summary['expectedprice-high']=final_summary['LatestPrice']*(1+final_summary['PredictedSignal']*
-                                                                      (final_summary['AvgReturns']+final_summary['StdDev']))
+                                                                      (final_summary['AvgReturns']+2*final_summary['StdDev']))
     final_summary['expectedprice-low']=final_summary['LatestPrice']*(1+final_summary['PredictedSignal']*
-                                                                      (final_summary['AvgReturns']-final_summary['StdDev']))
+                                                                      (final_summary['AvgReturns']-2*final_summary['StdDev']))
 
     return final_summary
