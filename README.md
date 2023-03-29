@@ -125,6 +125,7 @@ The plot below illustrate the plots associated with stationarity and auto-correl
 
 ![Price Stationarity](./Charts/ARIMAModelingSummary.png)
 
+![Click here](./Kunal/APICallandARIMAModeling.ipynb) for the code used to explore ARIMA
 
 ## Next Steps
 Future application updates will include
