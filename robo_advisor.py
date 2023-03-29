@@ -52,6 +52,12 @@ alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
 # setting the path to the tickers.csv
 csv_path = './Resources/tickers.csv'
 
+time_dictionary = {'5 Years': 2555, '1 Year': 265, '6 Months': 180, '3 Months': 90, '7 Days': 7}
+
+# creating a list to create tabs
+time_periods = list(time_dictionary.keys())
+num_days = list(time_dictionary.values())
+
 # creates a sidebar that is used to compose the portfolio
 with st.sidebar:
     st.title('Portfolio Builder')
@@ -81,6 +87,9 @@ with st.sidebar:
 
     # create a list of the tickers to use in the Alpaca API call
     ticker_keys = list(weights.keys())
+
+    # create a list of the ticker weights to use in portfolio_returns function
+    ticker_weights = list(weights.values())
 
     # calculate the total weight
     total_weight = sum(weights.values())
@@ -172,10 +181,6 @@ with tab2:
 
             st.subheader('Historic Close Prices')
 
-            # creating a list to create tabs
-            time_periods = ["5 Years", "1 Year", "6 Months", "3 Months", "7 Days"]
-            num_days = [2555, 265, 180, 90, 7]
-
             # setting up the tabs to display appropriate charts
             chart1, chart2, chart3, chart4, chart5 = st.tabs(time_periods)
 
@@ -216,7 +221,33 @@ with tab3:
     st.title('What-If')
     st.write('Discover the potential value of your investment portfolio with our advanced analysis tool. It takes the portfolio you built and visualizes how your investments **:blue[could have]** grown over various time periods. It provides valuable insights into the performance of your investments and helps you make informed decisions about your financial future.')
 
-    #return_plot, return_value = 
+    if total_weight != 1.0:
+        st.error('The sum of the weights in your portfolio must be equal to 1.0.')
+
+    else:
+        selected_period = st.selectbox('Select the time period you want to visualize.', time_periods)
+
+        # retrieving an integer from a string
+        periods = {"Year": 365, "Years": 365, "Months": 30, "Days": 1}
+        time_number, time_word = selected_period.split(' ')
+        number_days = int(time_number) * periods[time_word]
+
+        # calling the portfolio_returns function to get probable returns and the plot
+        return_plot, return_num = portfolio_returns(concat_market_data, ticker_keys, ticker_weights, investment_amount, selected_period=number_days)
+        co1, co2 = st.columns([2.5, .9], gap='large')
+
+        with co1:
+
+            # showing potential returns
+            st.subheader(f"If you would have invested :blue[**${investment_amount}**]  {selected_period.lower()} ago, your portfolio would have an estimated value of :blue[**${return_num:.2f}**] today.")
+
+            # setting up the tabs to display appropriate charts
+            st.plotly_chart(return_plot, use_container_width=True)
+
+        with co2:
+            st.title('')
+            st.image('Images/whatif.png', use_column_width= True)
+         
 
 with tab4:
     st.title('Robo Advisor')
