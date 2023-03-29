@@ -56,7 +56,7 @@ def concatDataframes(tickers_dfs, tickers):
   df_portfolio_year = df_portfolio_year.fillna(0)
   return df_portfolio_year
 
-def createSignals(tickers_dfs, priceSummary):
+def createSignals(tickers_dfs, comp_df):
   # new list for signals and such
   signals_dfs = []
 
@@ -78,7 +78,7 @@ def createSignals(tickers_dfs, priceSummary):
     ticker['timestamp'] = pd.to_datetime(ticker['timestamp']).dt.date
 
     # add projected close to dataframe
-    ticker.loc[len(ticker)] = [tomorrow, priceSummary.iloc[index]["expectedprice"]]
+    ticker.loc[len(ticker)] = [tomorrow, comp_df.iloc[index]["Actual Price"]]
     ticker = ticker.set_index('timestamp')
 
     # increment index
