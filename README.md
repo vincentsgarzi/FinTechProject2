@@ -92,9 +92,9 @@ pip install -U scikit-learn
 
 The front end of the application was developed using the `Streamlit` library. In the backend it extracts data using ALPACA APIs. It evaluates the expected returns using multiple machine learning models and selects the optimal model by comparing the performance of the models in terms of model accuracy, precision and recall. The result of the selected ML model is combined with a naive estimate of expected returns using performance of the stock over the last 30 days.  In the current version of the application, a price forecast is also generated using time series modeling and a final estimate of the expected price is made based on the comparison of the naive estimate and time series forecast. This expected price feds into the DMAC algorithm of the application which generates the trading signals for the next day.
 
-# ADD DEMO DETAILS HERE 
-
-
+![Demo Image](./Images/demo1.png)
+![Demo Image](./Images/demo2.png)
+![Demo Image](./Images/demo3.png)
 
 
 

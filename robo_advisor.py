@@ -251,10 +251,7 @@ with tab3:
 
 with tab4:
     st.title('Robo Advisor')
-    st.write('Our robo-advisor tab uses machine learning and simple moving averages to provide you with real-time recommendations on when to buy or sell specific stocks in your portfolio. The red and green arrows indicate whether you should sell or buy a stock, respectively, based on our analysis of market trends and performance data.')
-    st.write('You can visualize each stock in your portfolio by selecting it from the dropdown menu. Our data-driven recommendations take the guesswork out of investing and help you make informed decisions to optimize your portfolio for maximum returns.')
 
-    st.title('')
     if len(ticker_keys) != 0:
 
         priceSummary = PriceSummary(ticker_keys, market_data)
@@ -275,6 +272,9 @@ with tab4:
         side1, side2 = st.columns([2,.75], gap='large')
 
         with side1:
+            st.write('Our robo-advisor tab uses machine learning and simple moving averages to provide you with real-time recommendations on when to buy or sell specific stocks in your portfolio. The red and green arrows indicate whether you should sell or buy a stock, respectively, based on our analysis of market trends and performance data.')
+            st.write('You can visualize each stock in your portfolio by selecting it from the dropdown menu. Our data-driven recommendations take the guesswork out of investing and help you make informed decisions to optimize your portfolio for maximum returns.')
+
 
             ticker_symbol = st.selectbox("Select Ticker Symbol", ticker_keys)
 
@@ -284,13 +284,29 @@ with tab4:
 
         with side2:
 
-            st.subheader('Expected Prices')
-            st.dataframe(signals_df)
-            st.write('Below are the expected future prices with a 95% confidence of the stocks in your portfolio.')
-            st.dataframe(comp_df, use_container_width=True)
+            st.image("Images/robot.png", width=200)
+
             st.title('')
-            st.image('Images/robot.png', use_column_width=True)
 
+            st.subheader('Recommended Action')
 
+            # for loop to indicate whether the user should buy, sell, or hold for each stock in portfolio
+            index = 0
+            for signal in signals_df:
+                position = ''
+                sig = signal.iloc[len(signal)-1]['Entry/Exit']
+                if sig == 0.0:
+                    position = "maintain position for"
+                elif sig == 1.0:
+                    position = "buy"
+                else:
+                    position = "sell"
+                st.write(f"You should **:blue[{position}]** {ticker_keys[index]}.")
+                index = index + 1
 
+            st.title('')
 
+            st.subheader('Expected Prices')
+            st.write('Below are the expected future prices with a 95% confidence of the stocks in your portfolio.')
+
+            st.dataframe(comp_df, use_container_width=True)
