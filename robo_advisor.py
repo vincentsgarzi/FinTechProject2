@@ -13,7 +13,6 @@ from datetime import date, timedelta
 import plotly.express as px
 import sys
 import os
-import streamlit_scrollable_textbox as stx
 
 # Change directory to the directory that contains the subdirectories
 os.chdir("../FinTechProject2")
@@ -134,8 +133,13 @@ with tab2:
         # calling the gatherData function to get the stock ticker data
         market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
 
+        tickers_dfs = []
+        for ticker in ticker_keys:
+            ticker = market_data[market_data['symbol']==ticker].drop('symbol', axis=1)
+            tickers_dfs.append(ticker)
+
         # concatanating the dataframe to visualize close history
-        concat_market_data = concatDataframes(market_data, ticker_keys)
+        concat_market_data = concatDataframes(tickers_dfs, ticker_keys)
 
     except:
         st.error('Must build your portfolio to proceed.')
@@ -202,8 +206,6 @@ with tab2:
 
             news = get_news_headlines(tickers=ticker_keys, api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
-
-
 with tab3:
     st.title('What-If')
     st.write('Discover the potential value of your investment portfolio with our advanced analysis tool. It takes the portfolio you built and visualizes how your investments **:blue[could have]** grown over various time periods. It provides valuable insights into the performance of your investments and helps you make informed decisions about your financial future.')
@@ -211,29 +213,22 @@ with tab3:
 with tab4:
     st.title('Robo Advisor')
 
+    ticker_keys = ["AAPL"]
 
-    today = date.today()
-    timeframe = "1Day"
-    start = pd.Timestamp(today - DateOffset(years=5), tz="America/New_York").isoformat()
-    end = pd.Timestamp(today, tz="America/New_York").isoformat()
+    if len(ticker_keys) != 0:
+        market_data = gatherData(ticker_keys, alpaca_api_key, alpaca_secret_key)
 
-    # Create the Alpaca API object
-    alpaca = tradeapi.REST(
-    alpaca_api_key,
-    alpaca_secret_key,
-    api_version="v2")
+        priceSummary = PriceSummary(ticker_keys, market_data)
+        nextDay = forecast_next_day(ticker_keys, market_data)
+        comp_df = compare_prices(nextDay, priceSummary)
 
-    df_portfolio_year = alpaca.get_bars(
-        ticker_keys,
-        timeframe,
-        start
-    ).df
-    priceSummary = PriceSummary(tickers = ticker_keys, inputdata = df_portfolio_year)
-    nextDay = forecast_next_day(ticker_keys, df_portfolio_year)
-    comp_df = compare_prices(nextDay, priceSummary)
-    signals_df = createSignals(market_data, priceSummary)
+        tickers_dfs = []
+        for ticker in ticker_keys:
+            ticker = market_data[market_data['symbol']==ticker].drop('symbol', axis=1)
+            tickers_dfs.append(ticker)
 
-    st.plotly_chart(robo_graphs(signals_df=signals_df, tickers=ticker_keys))
+        signals_df = createSignals(tickers_dfs, comp_df)
 
+        print(signals_df)
 
-
+        st.plotly_chart(robo_graphs(signals_df, ticker_keys))

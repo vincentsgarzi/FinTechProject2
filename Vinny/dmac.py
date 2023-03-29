@@ -27,7 +27,6 @@ alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
 #tickers = ["AAPL", "TSLA", "MSFT"] #this will be gathered from sidebar eventually
 
 def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
-  tickers_dfs = []
 
   today = date.today()
   timeframe = "1Day"
@@ -36,9 +35,9 @@ def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
 
   # Create the Alpaca API object
   alpaca = tradeapi.REST(
-  alpaca_api_key,
-  alpaca_secret_key,
-  api_version="v2")
+    alpaca_api_key,
+    alpaca_secret_key,
+    api_version="v2")
 
   df_portfolio_year = alpaca.get_bars(
       tickers,
@@ -46,10 +45,7 @@ def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
       start
   ).df
 
-  for ticker in tickers:
-      ticker = df_portfolio_year[df_portfolio_year['symbol']==ticker].drop('symbol', axis=1)
-      tickers_dfs.append(ticker)
-  return tickers_dfs
+  return df_portfolio_year
 
 def concatDataframes(tickers_dfs, tickers):
   df_portfolio_year = pd.concat(tickers_dfs,axis=1, keys=tickers)
@@ -72,14 +68,12 @@ def createSignals(tickers_dfs, comp_df):
 
   for ticker in tickers_dfs:
     # Grab index (date) and close from each df
-
     ticker = ticker.reset_index()
-    ticker = ticker.loc[:,["timestamp", "close"]].copy()
-    ticker['timestamp'] = pd.to_datetime(ticker['timestamp']).dt.date
+    ticker = ticker.loc[:,["index", "close"]].copy()
 
     # add projected close to dataframe
     ticker.loc[len(ticker)] = [tomorrow, comp_df.iloc[index]["Actual Price"]]
-    ticker = ticker.set_index('timestamp')
+    ticker = ticker.set_index('index')
 
     # increment index
     index = index + 1
@@ -101,5 +95,6 @@ def createSignals(tickers_dfs, comp_df):
     # add to signals list
     signals_dfs.append(ticker)
 
+  print("returning signals dfs")
   return signals_dfs
 

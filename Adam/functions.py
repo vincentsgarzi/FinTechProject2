@@ -5,7 +5,6 @@ import plotly.express as px
 from datetime import date, timedelta
 import alpaca_trade_api as tradeapi
 import streamlit as st
-import streamlit_scrollable_textbox as stx
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -13,7 +12,7 @@ from plotly.subplots import make_subplots
 def get_cleaned_tickers(csv_path):
 
     # reading in the csv file
-    nyse_tickers = pd.read_csv(Path(csv_path)) 
+    nyse_tickers = pd.read_csv(Path(csv_path))
     nyse_tickers['Symbol'] = nyse_tickers['Symbol'].astype(str)
 
     # removing the tickers that contain a '^' sign, for data cleansing and alpaca api compatability
@@ -144,7 +143,7 @@ def robo_graphs(signals_dfs, tickers):
 
         # show plot
         fig.show()
-        
+
 
 
 
