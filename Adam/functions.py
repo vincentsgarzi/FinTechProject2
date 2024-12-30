@@ -49,20 +49,25 @@ def portfolio_breakdown(csv_path, weights):
 
 # function that returns the line plot for the the historical close prices
 def plot_close_prices(ticker_keys, concat_market_data, selected_period):
+    # Convert concat_market_data.index to tz-naive
+    concat_market_data.index = concat_market_data.index.tz_localize(None)
 
-    # calculate the start date based on the selected time period
+    # Calculate the start date based on the selected time period
     today = date.today()
     start_date = today - timedelta(days=selected_period)
 
-    # filter the dataframe to the selected time period
+    # Filter the dataframe to the selected time period
     df_period = concat_market_data.loc[start_date:]
 
-    # concatanating the dataframe to only show the 'close' columns
+    # Concatenate the dataframe to only show the 'close' columns
     close_df = pd.concat([df_period.loc[:, (ticker, 'close')] for ticker in ticker_keys], axis=1)
     close_df = close_df.droplevel(axis=1, level=1)
 
-    # creating the plot to show the closing prices over a specific period of time
-    close_plot = px.line(close_df, labels={'variable':'Ticker', 'value':'Closing Price (USD)', 'timestamp':'Date'})
+    # Creating the plot to show the closing prices over a specific period of time
+    close_plot = px.line(
+        close_df,
+        labels={'variable': 'Ticker', 'value': 'Closing Price (USD)', 'timestamp': 'Date'}
+    )
 
     return close_plot
 

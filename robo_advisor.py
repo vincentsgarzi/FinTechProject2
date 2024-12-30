@@ -1,3 +1,36 @@
+from ddtrace import patch_all, tracer
+import logging
+from ddtrace.contrib.logging import patch as log_patch
+patch_all()
+log_patch()
+
+log_file = "/Users/vincent.sgarzi/Repos/FinTechProject2/robo_logs.log"
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the log level
+    format="%(asctime)s [%(levelname)s] [dd.service=%(dd.service)s] [dd.trace_id=%(dd.trace_id)s] [dd.span_id=%(dd.span_id)s] [source=python] - %(message)s",
+    handlers=[
+        logging.FileHandler(log_file),  # Write logs to the specified file
+        logging.StreamHandler()  # Output logs to the console as well
+    ]
+)
+
+# Set DEBUG level for Datadog logs
+logging.getLogger("ddtrace").setLevel(logging.DEBUG)
+logging.getLogger("datadog").setLevel(logging.DEBUG)
+
+# Create logger instance for your script
+logger = logging.getLogger(__name__)
+
+# Example log messages
+logger.debug("Debug log message for troubleshooting.")
+logger.info("Application started successfully.")
+
+tracer.set_tags({"service.name": "robo_advisor"})
+
+with tracer.trace("example.trace", service="robo_advisor"):
+    logger.info("This is a log message correlated with a Datadog trace.")
+
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -39,77 +72,77 @@ from fbprophet import forecast_next_day
 from portfolio import portfolio_returns
 
 
-# sets the page configuration for Streamlit utilization
+logger.info("setting the page configuration for Streamlit utilization")
 st.set_page_config(page_title="Investment Application", page_icon=":earth_americas:", layout='wide')
 
-# calling the load_dotenv() function to retrieve information from the .env file
+logger.info("calling the load_dotenv() function to retrieve information from the .env file")
 load_dotenv()
 
-# gathering the api keys for the Alpaca API
+logger.info("gathering the api keys for the Alpaca API")
 alpaca_api_key = os.getenv("ALPACA_API_KEY")
 alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
 
-# setting the path to the tickers.csv
+logger.info("setting the path to the tickers.csv")
 csv_path = './Resources/tickers.csv'
 
 time_dictionary = {'5 Years': 2555, '1 Year': 265, '6 Months': 180, '3 Months': 90, '7 Days': 7}
 
-# creating a list to create tabs
+logger.info("creating a list to create tabs")
 time_periods = list(time_dictionary.keys())
 num_days = list(time_dictionary.values())
 
-# creates a sidebar that is used to compose the portfolio
+logger.info("creates a sidebar that is used to compose the portfolio")
 with st.sidebar:
     st.title('Portfolio Builder')
 
-    # load NYSE tickers
+    logger.info("load NYSE tickers")
     nyse_tickers = get_cleaned_tickers(csv_path)
 
-    # create a dropdown menu for selecting tickers
+    logger.info("create a dropdown menu for selecting tickers")
     st.subheader('Ticker Selection:')
     selected_tickers = st.multiselect(':blue[Select the stock tickers you wish to incorporate into your portfolio.]', nyse_tickers)
 
     if selected_tickers == []:
         st.error('No tickers have been selected.')
 
-    # create a dictionary for storing ticker weights
+    logger.info("create a dictionary for storing ticker weights")
     weights = {}
 
     st.subheader('Ticker Weights:')
     st.caption(':blue[Allot the weights to your chosen stock tickers.]')
     st.caption('_Note: The combined total must be equal to 1.0._')
 
-    # loop through selected tickers and prompt the user to input weights
+    logger.info("loop through selected tickers and prompt the user to input weights")
     for ticker in selected_tickers:
         ticker_symbol, company_name = ticker.split(' - ')
         weight = st.slider(f'{ticker_symbol} Weight:', key=ticker_symbol, min_value=.0, max_value=1.0, value=0.0, step=.05)
         weights[ticker_symbol] = weight
 
-    # create a list of the tickers to use in the Alpaca API call
+    logger.info("create a list of the tickers to use in the Alpaca API call")
     ticker_keys = list(weights.keys())
 
-    # create a list of the ticker weights to use in portfolio_returns function
+    logger.info("create a list of the ticker weights to use in portfolio_returns function")
     ticker_weights = list(weights.values())
 
-    # calculate the total weight
+    logger.info("calculate the total weight")
     total_weight = sum(weights.values())
 
-    # if the total weight is not equal to 100, show an error message
+    logger.info("if the total weight is not equal to 100, show an error message")
     if total_weight != 1.0:
         st.error(f'Total combined weight of the stocks in your portfolio is currently {total_weight:.2f} must be equal to 1.0.')
 
     st.subheader('Investment Amount:')
     st.caption(':blue[Enter the amount you wish to invest in USD.]')
 
-    # create an entry box to prompt the user for the investment amount
+    logger.info("create an entry box to prompt the user for the investment amount")
     investment_amount = st.number_input("Investment Amount", min_value=0, step=500, value=1000)
 
-# creates four tabs that will display on the webpage
+logger.info("creates four tabs that will display on the webpage")
 tab1, tab2, tab3, tab4 = st.tabs(['About', 'Portfolio Dashboard', 'What-If', 'Robo Advisor'])
 
 with tab1:
 
-    st.image('Images/finance_banner.png', use_column_width=True, )
+    st.image('Images/finance_banner.png', use_container_width=True, )
     st.title('About Us')
 
     # Description
@@ -142,7 +175,7 @@ with tab2:
     st.title('')
 
     try:
-        # calling the gatherData function to get the stock ticker data
+        logger.info("calling the gatherData function to get the stock ticker data")
         market_data = gatherData(tickers = ticker_keys, alpaca_api_key= alpaca_api_key, alpaca_secret_key= alpaca_secret_key)
 
         tickers_dfs = []
@@ -150,22 +183,24 @@ with tab2:
             ticker = market_data[market_data['symbol']==ticker].drop('symbol', axis=1)
             tickers_dfs.append(ticker)
 
-        # concatanating the dataframe to visualize close history
+        logger.info("concatanating the dataframe to visualize close history")
         concat_market_data = concatDataframes(tickers_dfs, ticker_keys)
 
     except:
         st.error('Must build your portfolio to proceed.')
+        logger.error("Must build your portfolio to proceed.")
 
-    # error handling to ensure the user correctly input their data
+    logger.info("error handling to ensure the user correctly input their data")
     if total_weight != 1:
         st.error('The sum of the weights in your portfolio must be equal to 1.0.')
+        logger.error("The sum of the weights in your portfolio must be equal to 1.0.")
     else:
-        # calling the portfolio_breakdown function to get the portfolio breakdown pi charts
+        logger.info("calling the portfolio_breakdown function to get the portfolio breakdown pi charts")
         sector_pie, industry_pie, stock_pie = portfolio_breakdown(csv_path=csv_path, weights=weights)
 
         st.subheader('Portfolio Composition')
 
-        # putting the pi charts into respective columns
+        logger.info("putting the pi charts into respective columns")
         pi1, pi2, pi3 = st.columns(3, gap='medium')
 
         with pi1:
@@ -181,10 +216,10 @@ with tab2:
 
             st.subheader('Historic Close Prices')
 
-            # setting up the tabs to display appropriate charts
+            logger.info("setting up the tabs to display appropriate charts")
             chart1, chart2, chart3, chart4, chart5 = st.tabs(time_periods)
 
-            # displaying the appropriate chart for its time frame using the 'plot_close_prices' function
+            logger.info("displaying the appropriate chart for its time frame using the 'plot_close_prices' function")
             with chart1:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[0])
                 st.plotly_chart(close_plot, use_container_width=True)
@@ -205,7 +240,7 @@ with tab2:
 
             st.subheader('Current Close Prices')
 
-            # calling the 'get_closing_prices' function to retrieve a dataframe of the closing prices for each ticker the user selected
+            logger.info("calling the 'get_closing_prices' function to retrieve a dataframe of the closing prices for each ticker the user selected")
             current_close_df = get_closing_prices(tickers=ticker_keys,api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
             st.dataframe(current_close_df, use_container_width=True)
@@ -214,7 +249,7 @@ with tab2:
 
             st.subheader('Market News')
 
-            # calling the 'get_news_headlines' function to 
+            logger.info("calling the 'get_news_headlines' function to")
             news = get_news_headlines(tickers=ticker_keys, api_key=alpaca_api_key, secret_key=alpaca_secret_key)
 
 with tab3:
@@ -223,30 +258,32 @@ with tab3:
 
     if total_weight != 1.0:
         st.error('The sum of the weights in your portfolio must be equal to 1.0.')
+        logger.error("The sum of the weights in your portfolio must be equal to 1.0.")
+
 
     else:
         selected_period = st.selectbox('Select the time period you want to visualize.', time_periods)
 
-        # retrieving an integer from a string
+        logger.info("retrieving an integer from a string")
         periods = {"Year": 365, "Years": 365, "Months": 30, "Days": 1}
         time_number, time_word = selected_period.split(' ')
         number_days = int(time_number) * periods[time_word]
 
-        # calling the portfolio_returns function to get probable returns and the plot
+        logger.info("calling the portfolio_returns function to get probable returns and the plot")
         return_num, return_plot = portfolio_returns(concat_market_data, ticker_keys, ticker_weights, investment_amount, selected_period=number_days)
         co1, co2 = st.columns([2.5, .9], gap='large')
 
         with co1:
 
-            # showing potential returns
+            logger.info("showing potential returns")
             st.subheader(f"If you would have invested :blue[**${investment_amount}**]  {selected_period.lower()} ago, your portfolio would have an estimated value of :blue[**${return_num:.2f}**] today.")
 
-            # setting up the tabs to display appropriate charts
+            logger.info("setting up the tabs to display appropriate charts")
             st.plotly_chart(return_plot, use_container_width=True)
 
         with co2:
             st.title('')
-            st.image('Images/whatif.png', use_column_width= True)
+            st.image('Images/whatif.png', use_container_width= True)
          
 
 with tab4:
@@ -263,10 +300,10 @@ with tab4:
             ticker = market_data[market_data['symbol']==ticker].drop('symbol', axis=1)
             tickers_dfs.append(ticker)
 
-        # calling the 'createSignals' function to return a dataframe with the buy and sell datax
+        logger.info("calling the 'createSignals' function to return a dataframe with the buy and sell datax")
         signals_df = createSignals(tickers_dfs, comp_df)
 
-        # calling the robo_graphs function to visualize when the user should buy/sell
+        logger.info("calling the robo_graphs function to visualize when the user should buy/sell")
         charts_dict = robo_graphs(signals_df, ticker_keys)
 
         side1, side2 = st.columns([2,.75], gap='large')
@@ -290,7 +327,7 @@ with tab4:
 
             st.subheader('Recommended Action')
 
-            # for loop to indicate whether the user should buy, sell, or hold for each stock in portfolio
+            logger.info("for loop to indicate whether the user should buy, sell, or hold for each stock in portfolio")
             index = 0
             for signal in signals_df:
                 position = ''
