@@ -4,7 +4,8 @@ from ddtrace.contrib.logging import patch as log_patch
 patch_all()
 log_patch()
 
-log_file = "/Users/vincent.sgarzi/Repos/FinTechProject2/robo_logs.log"
+import os
+log_file = os.path.join(os.getcwd(), 'robo_logs.log')
 
 logging.basicConfig(
     level=logging.DEBUG,  # Set the log level
@@ -16,8 +17,8 @@ logging.basicConfig(
 )
 
 # Set DEBUG level for Datadog logs
-logging.getLogger("ddtrace").setLevel(logging.DEBUG)
-logging.getLogger("datadog").setLevel(logging.DEBUG)
+logging.getLogger("ddtrace").setLevel(logging.INFO)
+logging.getLogger("datadog").setLevel(logging.INFO)
 
 # Create logger instance for your script
 logger = logging.getLogger(__name__)
@@ -34,7 +35,6 @@ with tracer.trace("example.trace", service="robo_advisor"):
 import streamlit as st
 import pandas as pd
 from pathlib import Path
-import os
 import pandas as pd
 import numpy as np
 import alpaca_trade_api as tradeapi
