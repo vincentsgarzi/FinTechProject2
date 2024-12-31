@@ -3,6 +3,7 @@
 #########################
 from ddtrace import patch_all, tracer
 import logging
+import boto3
 from ddtrace.contrib.logging import patch as log_patch
 patch_all()
 log_patch()
@@ -19,6 +20,27 @@ logging.basicConfig(
         logging.StreamHandler()  
     ]
 )
+
+LOG_FILES = [
+    "/home/ubuntu/FinTechProject2/robo_logs.log",
+    "/home/ubuntu/FinTechProject2/kunal_data.log",
+    "/home/ubuntu/FinTechProject2/model_iteration.log",
+    "/home/ubuntu/FinTechProject2/news_service.log",
+    "/home/ubuntu/FinTechProject2/functions_service.log"
+]
+
+def upload_logs_to_s3(local_log_file, s3_bucket, s3_key_prefix):
+    """
+    Uploads a local log file to the specified S3 bucket.
+    The S3 object key is formed by prefix + current timestamp + filename.
+    """
+    s3_client = boto3.client("s3")
+    timestamp = datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
+    # e.g. logs/20240101_120000_robo_logs.log
+    s3_key = f"{s3_key_prefix}/{timestamp}_{os.path.basename(local_log_file)}"
+    
+    s3_client.upload_file(local_log_file, s3_bucket, s3_key)
+    logger.info(f"Uploaded {local_log_file} to s3://{s3_bucket}/{s3_key}")
 
 # Set DEBUG/INFO level for Datadog logs
 logging.getLogger("ddtrace").setLevel(logging.INFO)
@@ -45,7 +67,7 @@ import pandas as pd
 import numpy as np
 import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from pandas import DateOffset
 import plotly.express as px
 import sys
@@ -466,3 +488,6 @@ with tab4:
                 'Below are the expected future prices with a 95% confidence of the stocks in your portfolio.'
             )
             st.dataframe(comp_df, use_container_width=True)
+
+        for log_file in LOG_FILES:
+            upload_logs_to_s3(log_file, "vs-robologs", "robo_advisor_logs")
