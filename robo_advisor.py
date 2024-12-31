@@ -35,9 +35,8 @@ def upload_logs_to_s3(local_log_file, s3_bucket, s3_key_prefix):
     The S3 object key is formed by prefix + current timestamp + filename.
     """
     s3_client = boto3.client("s3")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # e.g. logs/20240101_120000_robo_logs.log
-    s3_key = f"{s3_key_prefix}/{timestamp}_{os.path.basename(local_log_file)}"
+    s3_key = f"{s3_key_prefix}/{os.path.basename(local_log_file)}"
     
     s3_client.upload_file(local_log_file, s3_bucket, s3_key)
     logger.info(f"Uploaded {local_log_file} to s3://{s3_bucket}/{s3_key}")
