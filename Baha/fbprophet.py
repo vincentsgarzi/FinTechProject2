@@ -4,76 +4,99 @@ import alpaca_trade_api as tradeapi
 import os
 from pandas.tseries.offsets import DateOffset
 import datetime as dt
-from cmdstanpy import install_cmdstan
-install_cmdstan()
-from prophet import Prophet
-model = Prophet(stan_backend='CMDSTANPY')
+from prophet import Prophet  # PyStan backend is used by default
 
-# Initializing Facebook Prophet library
+# Datadog imports
+from ddtrace import tracer, patch_all
+import logging
+from ddtrace.contrib.logging import patch as log_patch
+
+# Enable Datadog tracing and logging
+patch_all()
+log_patch()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format=(
+        "%(asctime)s [%(levelname)s] [dd.service=%(dd.service)s] "
+        "[dd.trace_id=%(dd.trace_id)s] [dd.span_id=%(dd.span_id)s] "
+        "[source=python] - %(message)s"
+    )
+)
+logger = logging.getLogger(__name__)
+
+# Set Datadog global tags
+tracer.set_tags({"service.name": "robo_advisor"})
+
+# Install environment variables
+load_dotenv()
+
+# Forecasting function with Datadog tracing
+@tracer.wrap("forecast_next_day")
 def forecast_next_day(tickers, inputdata):
-    # Create an empty DataFrame to store the results
+    logger.info("Starting forecast_next_day for tickers: %s", tickers)
+    
     results_df = pd.DataFrame()
-    
-    # Loop over each ticker symbol in the list of tickers
+
     for ticker in tickers:
-        # Create a DataFrame with the closing prices for the current ticker
-        stock_df = pd.DataFrame(inputdata.loc[inputdata["symbol"] == ticker]["close"])
-        
-        # Reset the index and rename the columns to work with Prophet
-        stock_df = stock_df.reset_index().rename(columns={"index": "ds", "close": "y"})
-        
-        # Create a Prophet model and fit it to the data
-        model = Prophet()
-        model.fit(stock_df)
-        
-        # Create a DataFrame with the next day's date
-        future = model.make_future_dataframe(periods=1, freq="D")
-        
-        # Use the model to predict the next day's closing price
-        forecast = model.predict(future)
-        
-        # Extract the forecasted price and the upper/lower bounds of the forecast for the next day
-        forecast_yhats = forecast[["yhat", "yhat_lower", "yhat_upper"]].tail(1).values[0]
-        
-        # Add the results for the current ticker to the results DataFrame
-        new_row = pd.DataFrame([{
-            'ticker': ticker,
-            'yhat': forecast_yhats[0],
-            'yhat_lower': forecast_yhats[1],
-            'yhat_upper': forecast_yhats[2]
-        }])
-        
-        results_df = pd.concat([results_df, new_row], ignore_index=True)
+        with tracer.trace("forecasting.ticker", resource=ticker) as span:
+            logger.info("Processing ticker: %s", ticker)
+            
+            try:
+                # Prepare data for Prophet
+                stock_df = pd.DataFrame(inputdata.loc[inputdata["symbol"] == ticker]["close"])
+                stock_df = stock_df.reset_index().rename(columns={"index": "ds", "close": "y"})
+                
+                # Train the model
+                logger.debug("Training Prophet model for ticker: %s", ticker)
+                model = Prophet()
+                model.fit(stock_df)
+                
+                # Forecast next day's price
+                future = model.make_future_dataframe(periods=1, freq="D")
+                forecast = model.predict(future)
+                logger.debug("Forecast completed for ticker: %s", ticker)
+                
+                # Extract results
+                forecast_yhats = forecast[["yhat", "yhat_lower", "yhat_upper"]].tail(1).values[0]
+                new_row = pd.DataFrame([{
+                    'ticker': ticker,
+                    'yhat': forecast_yhats[0],
+                    'yhat_lower': forecast_yhats[1],
+                    'yhat_upper': forecast_yhats[2]
+                }])
+                results_df = pd.concat([results_df, new_row], ignore_index=True)
+            
+            except Exception as e:
+                logger.error("Error processing ticker %s: %s", ticker, str(e))
+                span.set_tag("error", True)
+                span.set_tag("error.msg", str(e))
     
-    # Return the results DataFrame
+    logger.info("Completed forecast_next_day for tickers: %s", tickers)
     return results_df
 
 
-# Function to compare forecasted prices to actual prices
+# Function to compare prices with logging and tracing
+@tracer.wrap("compare_prices")
 def compare_prices(results_df, df):
-    # Create an empty DataFrame to store the comparison results
+    logger.info("Starting compare_prices")
     comp_df = pd.DataFrame(columns=["Tickers", "Actual Price", "Best Price", "Worst Price"])
     
-    # Loop over each row in the input DataFrame
     for i in range(len(df)):
-        # Extract the symbol and expected price for the current row
         symbol = df.loc[i, 'Symbol']
         expected_price = df.loc[i, 'expectedprice']
         best_price = df.loc[i, 'expectedprice-high']
         worst_price = df.loc[i, 'expectedprice-low']
         
-        # Loop over each row in the results DataFrame
         for j in range(len(results_df)):
-            # If the ticker symbol in the results DataFrame matches the current symbol
             if results_df.loc[j, 'ticker'] == symbol:
-                # Extract the forecasted price and the upper/lower bounds of the forecast
                 predicted_price = results_df.loc[j, 'yhat']
                 yhat_best = results_df.loc[j, 'yhat_upper']
                 yhat_worst = results_df.loc[j, 'yhat_lower']
                 
-                # Compare the forecasted price to the actual price
+                # Create a comparison row
                 if predicted_price > expected_price:
-                    # If forecasted price > actual price, add a new row with best/worst prices
                     new_row = pd.DataFrame([{
                         "Tickers": symbol,
                         "Actual Price": expected_price,
@@ -88,7 +111,8 @@ def compare_prices(results_df, df):
                         "Worst Price": yhat_worst
                     }])
                 
-                # Use pd.concat to append the new row to comp_df
+                # Append to comparison DataFrame
                 comp_df = pd.concat([comp_df, new_row], ignore_index=True)
-    
+
+    logger.info("Completed compare_prices")
     return comp_df

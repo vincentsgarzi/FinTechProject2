@@ -204,11 +204,11 @@ with tab2:
         pi1, pi2, pi3 = st.columns(3, gap='medium')
 
         with pi1:
-            st.plotly_chart(stock_pie, use_container_width=True)
+            st.plotly_chart(stock_pie, use_container_width=True, key="chart_1")
         with pi2:
-            st.plotly_chart(sector_pie, use_container_width=True)
+            st.plotly_chart(sector_pie, use_container_width=True, key="chart_2")
         with pi3:
-            st.plotly_chart(industry_pie, use_container_width=True)
+            st.plotly_chart(industry_pie, use_container_width=True, key="chart_3")
 
         col1, col2 = st.columns([2.5,1], gap='large')
 
@@ -222,19 +222,19 @@ with tab2:
             logger.info("displaying the appropriate chart for its time frame using the 'plot_close_prices' function")
             with chart1:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[0])
-                st.plotly_chart(close_plot, use_container_width=True)
+                st.plotly_chart(close_plot, use_container_width=True, key="chart_4")
             with chart2:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[1])
-                st.plotly_chart(close_plot, use_container_width=True)
+                st.plotly_chart(close_plot, use_container_width=True, key="chart_5")
             with chart3:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[2])
-                st.plotly_chart(close_plot, use_container_width=True)
+                st.plotly_chart(close_plot, use_container_width=True, key="chart_6")
             with chart4:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[3])
-                st.plotly_chart(close_plot, use_container_width=True)
+                st.plotly_chart(close_plot, use_container_width=True, key="chart_7")
             with chart5:
                 close_plot = plot_close_prices(ticker_keys=ticker_keys, concat_market_data=concat_market_data, selected_period=num_days[4])
-                st.plotly_chart(close_plot, use_container_width=True)
+                st.plotly_chart(close_plot, use_container_width=True, key="chart_8")
 
         with col2:
 
@@ -279,7 +279,7 @@ with tab3:
             st.subheader(f"If you would have invested :blue[**${investment_amount}**]  {selected_period.lower()} ago, your portfolio would have an estimated value of :blue[**${return_num:.2f}**] today.")
 
             logger.info("setting up the tabs to display appropriate charts")
-            st.plotly_chart(return_plot, use_container_width=True)
+            st.plotly_chart(return_plot, use_container_width=True, key="chart_9")
 
         with co2:
             st.title('')
@@ -317,7 +317,7 @@ with tab4:
 
             st.title('')
 
-            st.plotly_chart(charts_dict[ticker_symbol], use_container_width=True)
+            st.plotly_chart(charts_dict[ticker_symbol], use_container_width=True, key="chart_10")
 
         with side2:
 
