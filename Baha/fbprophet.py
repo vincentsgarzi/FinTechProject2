@@ -1,12 +1,6 @@
-from dotenv import load_dotenv
-import pandas as pd
-import alpaca_trade_api as tradeapi
-import os
-from pandas.tseries.offsets import DateOffset
-import datetime as dt
-from prophet import Prophet  # PyStan backend is used by default
-
-# Datadog imports
+#########################
+# Datadog Instrumentation
+#########################
 from ddtrace import tracer, patch_all
 import logging
 from ddtrace.contrib.logging import patch as log_patch
@@ -15,7 +9,7 @@ from ddtrace.contrib.logging import patch as log_patch
 patch_all()
 log_patch()
 
-# Configure logging
+# Configure logging (console + correlation)
 logging.basicConfig(
     level=logging.DEBUG,
     format=(
@@ -26,15 +20,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Set Datadog global tags
+# Set Datadog global tags (optionally rename the service if you like)
 tracer.set_tags({"service.name": "robo_advisor"})
 
-# Install environment variables
+#########################
+# Standard Imports
+#########################
+import os
+from dotenv import load_dotenv
+import pandas as pd
+import alpaca_trade_api as tradeapi
+from pandas.tseries.offsets import DateOffset
+import datetime as dt
+from prophet import Prophet  # PyStan backend is used by default
+
+# Load environment variables
 load_dotenv()
 
-# Forecasting function with Datadog tracing
+#########################
+# Core Code
+#########################
+
 @tracer.wrap("forecast_next_day")
 def forecast_next_day(tickers, inputdata):
+    """
+    Given a list of tickers and historical data, this function uses
+    the Prophet model to predict the next day's closing price.
+    """
     logger.info("Starting forecast_next_day for tickers: %s", tickers)
     
     results_df = pd.DataFrame()
@@ -45,10 +57,13 @@ def forecast_next_day(tickers, inputdata):
             
             try:
                 # Prepare data for Prophet
-                stock_df = pd.DataFrame(inputdata.loc[inputdata["symbol"] == ticker]["close"])
-                stock_df = stock_df.reset_index().rename(columns={"index": "ds", "close": "y"})
+                stock_df = pd.DataFrame(
+                    inputdata.loc[inputdata["symbol"] == ticker]["close"]
+                )
+                stock_df = stock_df.reset_index().rename(
+                    columns={"index": "ds", "close": "y"}
+                )
                 
-                # Train the model
                 logger.debug("Training Prophet model for ticker: %s", ticker)
                 model = Prophet()
                 model.fit(stock_df)
@@ -61,10 +76,10 @@ def forecast_next_day(tickers, inputdata):
                 # Extract results
                 forecast_yhats = forecast[["yhat", "yhat_lower", "yhat_upper"]].tail(1).values[0]
                 new_row = pd.DataFrame([{
-                    'ticker': ticker,
-                    'yhat': forecast_yhats[0],
-                    'yhat_lower': forecast_yhats[1],
-                    'yhat_upper': forecast_yhats[2]
+                    "ticker": ticker,
+                    "yhat": forecast_yhats[0],
+                    "yhat_lower": forecast_yhats[1],
+                    "yhat_upper": forecast_yhats[2]
                 }])
                 results_df = pd.concat([results_df, new_row], ignore_index=True)
             
@@ -77,25 +92,32 @@ def forecast_next_day(tickers, inputdata):
     return results_df
 
 
-# Function to compare prices with logging and tracing
 @tracer.wrap("compare_prices")
 def compare_prices(results_df, df):
+    """
+    Compares the Prophet-forecasted prices (from results_df) to the expected
+    prices (from df), returning a DataFrame that shows the actual, best,
+    and worst prices for each ticker.
+    """
     logger.info("Starting compare_prices")
+    
     comp_df = pd.DataFrame(columns=["Tickers", "Actual Price", "Best Price", "Worst Price"])
     
+    # Loop through each row in df (user's expected price data)
     for i in range(len(df)):
-        symbol = df.loc[i, 'Symbol']
-        expected_price = df.loc[i, 'expectedprice']
-        best_price = df.loc[i, 'expectedprice-high']
-        worst_price = df.loc[i, 'expectedprice-low']
+        symbol = df.loc[i, "Symbol"]
+        expected_price = df.loc[i, "expectedprice"]
+        best_price = df.loc[i, "expectedprice-high"]
+        worst_price = df.loc[i, "expectedprice-low"]
         
+        # Find the matching ticker forecast in results_df
         for j in range(len(results_df)):
-            if results_df.loc[j, 'ticker'] == symbol:
-                predicted_price = results_df.loc[j, 'yhat']
-                yhat_best = results_df.loc[j, 'yhat_upper']
-                yhat_worst = results_df.loc[j, 'yhat_lower']
+            if results_df.loc[j, "ticker"] == symbol:
+                predicted_price = results_df.loc[j, "yhat"]
+                yhat_best = results_df.loc[j, "yhat_upper"]
+                yhat_worst = results_df.loc[j, "yhat_lower"]
                 
-                # Create a comparison row
+                # Decide if we should use user's expected price or Prophet's predicted price
                 if predicted_price > expected_price:
                     new_row = pd.DataFrame([{
                         "Tickers": symbol,
@@ -111,7 +133,6 @@ def compare_prices(results_df, df):
                         "Worst Price": yhat_worst
                     }])
                 
-                # Append to comparison DataFrame
                 comp_df = pd.concat([comp_df, new_row], ignore_index=True)
 
     logger.info("Completed compare_prices")

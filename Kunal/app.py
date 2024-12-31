@@ -1,3 +1,45 @@
+#########################
+# Datadog Instrumentation
+#########################
+from ddtrace import patch_all, tracer
+from ddtrace.contrib.logging import patch as log_patch
+
+# Patch all supported modules (requests, sqlite3, etc. if used)
+patch_all()
+# Patch logging to include Datadog trace details in logs
+log_patch()
+
+import logging
+import os
+
+# Configure logging to capture Datadog trace/spans
+log_file = os.path.join(os.getcwd(), 'model_iteration.log')
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] "
+           "[dd.service=%(dd.service)s] "
+           "[dd.trace_id=%(dd.trace_id)s] "
+           "[dd.span_id=%(dd.span_id)s] "
+           "[source=python] - %(message)s",
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
+
+# Optionally set log levels
+logging.getLogger("ddtrace").setLevel(logging.INFO)
+logging.getLogger("datadog").setLevel(logging.INFO)
+
+# Create a logger for this module
+logger = logging.getLogger(__name__)
+
+# You can tag all traces with a default service name if you like
+tracer.set_tags({"service.name": "model_service"})
+
+#########################
+# Original Imports
+#########################
 #import for testing and training timeframes
 import datetime as dt
 from pandas.tseries.offsets import DateOffset
@@ -11,126 +53,173 @@ from test_train import *
 from model_select import model_selection
 from expectedPerfCal import RecentPerfSummary
 
+#########################
+# Instrumented Functions
+#########################
+
 def model_iteration(tickers, inputdata):
-    # Creating an empty dataframe to save the performance summary
-    performance_summary = pd.DataFrame([])
+    """
+    Iterates over multiple ML models (SVC, Logistic Regression, Decision Tree),
+    evaluates performance, and returns a sorted DataFrame with model performance results.
+    """
+    with tracer.trace("model_iteration", service="model_service"):
+        logger.info("Starting model iteration on provided tickers.")
+        # Creating an empty dataframe to save the performance summary
+        performance_summary = pd.DataFrame([])
 
-    for index, ticker in enumerate(tickers):
-        # Function call to subset the historical data and create technical indicators
-        tickerdf = techinds(inputdata, ticker, 50, 100)
+        for index, ticker in enumerate(tickers):
+            # Function call to subset the historical data and create technical indicators
+            tickerdf = techinds(inputdata, ticker, 50, 100)
+            # Create target variable
+            target = targetdf(tickerdf)
+            # Create features
+            features = featuresdf(tickerdf)
+            # Create forecast DataFrame with just the last row
+            forecastdf = pd.DataFrame(tickerdf.iloc[-1, :]).transpose()
 
-        # Function call for creating dataframe with target variable
-        target = targetdf(tickerdf)
+            # Split the features and target datasets into training and testing subsets
+            X_train, y_train, X_test, y_test = train_test(features, target)
 
-        # Function call for creating dataframe with feature variables
-        features = featuresdf(tickerdf)
+            # Scale training, testing, and forecast features
+            X_train_scaled, X_test_scaled, X_frcst_scaled = scaling(
+                X_train.drop('symbol', axis=1),
+                X_test.drop('symbol', axis=1),
+                forecastdf.drop(['symbol', 'Signal'], axis=1)
+            )
 
-        # Creating a df with features to forecast 'tomorrow'
-        forecastdf = pd.DataFrame(tickerdf.iloc[-1, :]).transpose()
+            # SVC Model
+            svc_classification_report, method, forecast = supportvector(
+                X_train_scaled, X_test_scaled, X_frcst_scaled, y_train, y_test
+            )
+            svc_result_list = [
+                ticker,
+                index,
+                method,
+                svc_classification_report['accuracy'],
+                svc_classification_report['1']['precision'],
+                svc_classification_report['1']['recall'],
+                svc_classification_report['-1']['precision'],
+                svc_classification_report['-1']['recall'],
+                forecast[0]
+            ]
+            performance_summary = pd.concat(
+                [performance_summary, pd.DataFrame([svc_result_list])],
+                ignore_index=True
+            )
 
-        # Splitting the features and target datasets into training and testing subsets
-        X_train, y_train, X_test, y_test = train_test(features, target)
+            # Logistic Regression Model
+            logit_classification_report, method, forecast = logistic(
+                X_train_scaled, X_test_scaled, X_frcst_scaled, y_train, y_test
+            )
+            logit_result_list = [
+                ticker,
+                index,
+                method,
+                logit_classification_report['accuracy'],
+                logit_classification_report['1']['precision'],
+                logit_classification_report['1']['recall'],
+                logit_classification_report['-1']['precision'],
+                logit_classification_report['-1']['recall'],
+                forecast[0]
+            ]
+            performance_summary = pd.concat(
+                [performance_summary, pd.DataFrame([logit_result_list])],
+                ignore_index=True
+            )
 
-        # Scaling training, testing, and forecast features
-        X_train_scaled, X_test_scaled, X_frcst_scaled = scaling(
-            X_train.drop('symbol', axis=1),
-            X_test.drop('symbol', axis=1),
-            forecastdf.drop(['symbol', 'Signal'], axis=1)
+            # Decision Tree Model
+            DecTree_classification_report, method, forecast = tree(
+                X_train_scaled, X_test_scaled, X_frcst_scaled, y_train, y_test
+            )
+            dt_result_list = [
+                ticker,
+                index,
+                method,
+                DecTree_classification_report['accuracy'],
+                DecTree_classification_report['1']['precision'],
+                DecTree_classification_report['1']['recall'],
+                DecTree_classification_report['-1']['precision'],
+                DecTree_classification_report['-1']['recall'],
+                forecast[0]
+            ]
+            performance_summary = pd.concat(
+                [performance_summary, pd.DataFrame([dt_result_list])],
+                ignore_index=True
+            )
+
+        # Updating reporting columns
+        reportingcols = {
+            0: 'Company',
+            1: 'Position',
+            2: 'ModelType',
+            3: 'Accuracy',
+            4: 'PrecisionForReturnIncrease',
+            5: 'RecallForReturnIncrease',
+            6: 'PrecisionForReturnDecrease',
+            7: 'RecallForReturnDecrease',
+            8: 'Forecast'
+        }
+        performance_summary = performance_summary.rename(columns=reportingcols)
+
+        # Sorting the performance summary for final model selection
+        final_data_sorted = performance_summary.sort_values(
+            by=[
+                'Position',
+                'Accuracy',
+                'PrecisionForReturnIncrease',
+                'PrecisionForReturnDecrease',
+                'RecallForReturnIncrease',
+                'RecallForReturnDecrease'
+            ],
+            ascending=[True, False, False, False, False, False]
         )
 
-        # Executing SVC model
-        svc_classification_report, method, forecast = supportvector(
-            X_train_scaled, X_test_scaled, X_frcst_scaled, y_train, y_test
-        )
-        result_list = [ticker, index, method,
-                       svc_classification_report['accuracy'],
-                       svc_classification_report['1']['precision'],
-                       svc_classification_report['1']['recall'],
-                       svc_classification_report['-1']['precision'],
-                       svc_classification_report['-1']['recall'],
-                       forecast[0]]
-
-        # Use pd.concat instead of append
-        performance_summary = pd.concat([performance_summary, pd.DataFrame([result_list])], ignore_index=True)
-
-        # Executing Logistic Regression model
-        logit_classification_report, method, forecast = logistic(
-            X_train_scaled, X_test_scaled, X_frcst_scaled, y_train, y_test
-        )
-        result_list = [ticker, index, method,
-                       logit_classification_report['accuracy'],
-                       logit_classification_report['1']['precision'],
-                       logit_classification_report['1']['recall'],
-                       logit_classification_report['-1']['precision'],
-                       logit_classification_report['-1']['recall'],
-                       forecast[0]]
-
-        performance_summary = pd.concat([performance_summary, pd.DataFrame([result_list])], ignore_index=True)
-
-        # Executing Decision Tree model
-        DecTree_classification_report, method, forecast = tree(
-            X_train_scaled, X_test_scaled, X_frcst_scaled, y_train, y_test
-        )
-        result_list = [ticker, index, method,
-                       DecTree_classification_report['accuracy'],
-                       DecTree_classification_report['1']['precision'],
-                       DecTree_classification_report['1']['recall'],
-                       DecTree_classification_report['-1']['precision'],
-                       DecTree_classification_report['-1']['recall'],
-                       forecast[0]]
-
-        performance_summary = pd.concat([performance_summary, pd.DataFrame([result_list])], ignore_index=True)
-
-    # Updating reporting columns
-    reportingcols = {0: 'Company',
-                     1: 'Position',
-                     2: 'ModelType',
-                     3: 'Accuracy',
-                     4: 'PrecisionForReturnIncrease',
-                     5: 'RecallForReturnIncrease',
-                     6: 'PrecisionForReturnDecrease',
-                     7: 'RecallForReturnDecrease',
-                     8: 'Forecast'}
-    performance_summary = performance_summary.rename(columns=reportingcols)
-
-    # Sorting the performance summary for final model selection
-    final_data_sorted = performance_summary.sort_values(by=['Position',
-                                                            'Accuracy',
-                                                            'PrecisionForReturnIncrease',
-                                                            'PrecisionForReturnDecrease',
-                                                            'RecallForReturnIncrease',
-                                                            'RecallForReturnDecrease'],
-                                                        ascending=[True, False, False, False, False, False])
-
-    return final_data_sorted
+        logger.info("Completed model iteration. Returning final_data_sorted.")
+        return final_data_sorted
 
 
 def PriceSummary(tickers, inputdata):
-    performance_summary_sorted = model_iteration(tickers, inputdata)
+    """
+    Based on `model_iteration`, determines final summary of expected prices,
+    leveraging the top-performing model selection results.
+    """
+    with tracer.trace("PriceSummary", service="model_service"):
+        logger.info("Starting PriceSummary to determine final forecasted prices.")
 
-    final_summary = pd.DataFrame()
+        performance_summary_sorted = model_iteration(tickers, inputdata)
+        final_summary = pd.DataFrame()
 
-    for ticker in tickers:
-        method = model_selection(ticker, performance_summary_sorted)
-        price, mean, stdev = RecentPerfSummary(ticker, inputdata)
-        result_list = [ticker, method, price, abs(mean), stdev]
+        for ticker in tickers:
+            method = model_selection(ticker, performance_summary_sorted)
+            price, mean, stdev = RecentPerfSummary(ticker, inputdata)
+            result_list = [ticker, method, price, abs(mean), stdev]
 
-        # Use pd.concat instead of append
-        final_summary = pd.concat([final_summary, pd.DataFrame([result_list])], ignore_index=True)
+            final_summary = pd.concat(
+                [final_summary, pd.DataFrame([result_list])],
+                ignore_index=True
+            )
 
-    columns = {0: 'Symbol',
-               1: 'PredictedSignal',
-               2: 'LatestPrice',
-               3: 'AvgReturns',
-               4: 'StdDev'}
+        columns = {
+            0: 'Symbol',
+            1: 'PredictedSignal',
+            2: 'LatestPrice',
+            3: 'AvgReturns',
+            4: 'StdDev'
+        }
+        final_summary = final_summary.rename(columns=columns)
 
-    final_summary = final_summary.rename(columns=columns)
+        final_summary['expectedprice'] = (
+            final_summary['LatestPrice'] *
+            (1 + final_summary['PredictedSignal'] * final_summary['AvgReturns'])
+        )
+        final_summary['expectedprice-high'] = (
+            final_summary['LatestPrice'] *
+            (1 + final_summary['PredictedSignal'] * (final_summary['AvgReturns'] + 2 * final_summary['StdDev']))
+        )
+        final_summary['expectedprice-low'] = (
+            final_summary['LatestPrice'] *
+            (1 + final_summary['PredictedSignal'] * (final_summary['AvgReturns'] - 2 * final_summary['StdDev']))
+        )
 
-    final_summary['expectedprice'] = final_summary['LatestPrice'] * (
-            1 + final_summary['PredictedSignal'] * final_summary['AvgReturns'])
-    final_summary['expectedprice-high'] = final_summary['LatestPrice'] * (
-            1 + final_summary['PredictedSignal'] * (final_summary['AvgReturns'] + 2 * final_summary['StdDev']))
-    final_summary['expectedprice-low'] = final_summary['LatestPrice'] * (
-            1 + final_summary['PredictedSignal'] * (final_summary['AvgReturns'] - 2 * final_summary['StdDev']))
-
-    return final_summary
+        logger.info("PriceSummary calculation complete. Returning final_summary.")
+        return final_summary
