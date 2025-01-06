@@ -17,9 +17,9 @@ log_file = os.path.join(os.getcwd(), 'model_iteration.log')
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] "
-           "[dd.service=%(dd.service)s] "
-           "[dd.trace_id=%(dd.trace_id)s] "
-           "[dd.span_id=%(dd.span_id)s] "
+           "[service=%(dd.service)s] "
+           "[trace_id=%(dd.trace_id)s] "
+           "[span_id=%(dd.span_id)s] "
            "[source=python] - %(message)s",
     handlers=[
         logging.FileHandler(log_file),

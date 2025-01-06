@@ -13,8 +13,8 @@ log_patch()
 logging.basicConfig(
     level=logging.DEBUG,
     format=(
-        "%(asctime)s [%(levelname)s] [dd.service=%(dd.service)s] "
-        "[dd.trace_id=%(dd.trace_id)s] [dd.span_id=%(dd.span_id)s] "
+        "%(asctime)s [%(levelname)s] [service=%(dd.service)s] "
+        "[trace_id=%(dd.trace_id)s] [span_id=%(dd.span_id)s] "
         "[source=python] - %(message)s"
     )
 )
