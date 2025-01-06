@@ -1,6 +1,7 @@
 #########################
 # Datadog Instrumentation
 #########################
+import ddtrace
 from ddtrace import patch_all, tracer
 from ddtrace.contrib.logging import patch as log_patch
 
@@ -8,6 +9,7 @@ from ddtrace.contrib.logging import patch as log_patch
 patch_all()
 # Patch logging to include Datadog trace details
 log_patch()
+ddtrace.patch(logging=True)
 
 import logging
 import os
@@ -66,7 +68,7 @@ alpaca_api_key = os.getenv("ALPACA_API_KEY")
 alpaca_secret_key = os.getenv("ALPACA_SECRET_KEY")
 
 # tickers = ["AAPL", "TSLA", "MSFT"] #this will be gathered from sidebar eventually
-
+@tracer.wrap()
 def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
     """
     Gathers historical data from Alpaca for the specified tickers.
@@ -95,7 +97,7 @@ def gatherData(tickers, alpaca_api_key, alpaca_secret_key):
 
         logger.info("Data gathering complete.")
         return df_portfolio_year
-
+@tracer.wrap()
 def concatDataframes(tickers_dfs, tickers):
     """
     Concatenates individual ticker DataFrames into a multi-level DataFrame.
@@ -107,7 +109,7 @@ def concatDataframes(tickers_dfs, tickers):
         df_portfolio_year = df_portfolio_year.fillna(0)
         logger.info("DataFrames concatenated successfully.")
         return df_portfolio_year
-
+@tracer.wrap()
 def createSignals(tickers_dfs, comp_df):
     """
     Creates buy/sell signals based on SMA crossovers and the provided comparison dataframe.
