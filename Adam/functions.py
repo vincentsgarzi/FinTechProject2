@@ -13,18 +13,25 @@ import os
 
 # Configure logging for Datadog correlation
 log_file = os.path.join(os.getcwd(), "functions_service.log")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] "
-           "[dd.service=%(dd.service)s] "
-           "[dd.trace_id=%(dd.trace_id)s] "
-           "[dd.span_id=%(dd.span_id)s] "
-           "[source=python] - %(message)s",
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler()
-    ]
-)
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s [%(levelname)s] "
+#            "[service=%(dd.service)s] "
+#            "[trace_id=%(dd.trace_id)s] "
+#            "[span_id=%(dd.span_id)s] "
+#            "[source=python] - %(message)s",
+#     handlers=[
+#         logging.FileHandler(log_file),
+#         logging.StreamHandler()
+#     ]
+# )
+
+FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
+          '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
+          '- %(message)s')
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger(__name__)
+logger.level = logging.INFO
 
 # Optionally set log levels for ddtrace/datadog
 logging.getLogger("ddtrace").setLevel(logging.INFO)
