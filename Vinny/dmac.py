@@ -43,7 +43,7 @@ logging.getLogger("datadog").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Optionally, set a default service name for Datadog
-tracer.set_tags({"service.name": "kunal_data_service"})
+tracer.set_tags({"service": "kunal_data_service"})
 
 #########################
 # Original Code

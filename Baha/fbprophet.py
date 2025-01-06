@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 logger.level = logging.INFO
 
 # Set Datadog global tags (optionally rename the service if you like)
-tracer.set_tags({"service.name": "robo_advisor"})
+tracer.set_tags({"service": "fbprophet_service"})
 
 #########################
 # Standard Imports

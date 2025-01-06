@@ -42,7 +42,7 @@ logging.getLogger("datadog").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Optionally set default service name for these traces
-tracer.set_tags({"service.name": "news_service"})
+tracer.set_tags({"service": "news_service"})
 
 #########################
 # Original Imports
