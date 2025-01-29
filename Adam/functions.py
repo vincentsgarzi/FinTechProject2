@@ -132,6 +132,7 @@ def get_closing_prices(tickers, api_key, secret_key):
         logger.info("Fetching latest closing prices via Alpaca API.")
         api = tradeapi.REST(api_key, secret_key)
         barsets = api.get_bars(tickers, '1D').df
+        barsets = barsets.reset_index()
         barsets = barsets.set_index('symbol').rename_axis('Ticker')
 
         barsets = barsets.drop(columns=['open', 'high', 'low','volume', 'trade_count', 'vwap'])
