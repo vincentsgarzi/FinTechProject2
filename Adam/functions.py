@@ -147,7 +147,10 @@ def get_closing_prices(tickers, api_key, secret_key):
             barsets = barsets.reset_index()
             barsets = barsets.set_index("symbol").rename_axis("Ticker")
 
-        barsets = barsets.drop(columns=['open', 'high', 'low','volume', 'trade_count', 'vwap'])
+        barsets = barsets.drop(
+            columns=["open", "high", "low", "volume", "trade_count", "vwap"],
+            errors="ignore"
+        )
         barsets = barsets.rename(columns={'close':'Closing Price (USD)'})
 
         logger.info("Returning DataFrame of current closing prices.")
