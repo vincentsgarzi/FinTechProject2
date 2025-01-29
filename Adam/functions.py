@@ -131,9 +131,21 @@ def get_closing_prices(tickers, api_key, secret_key):
     with tracer.trace("get_closing_prices", service="functions_service"):
         logger.info("Fetching latest closing prices via Alpaca API.")
         api = tradeapi.REST(api_key, secret_key)
-        barsets = api.get_bars(tickers, '1D').df
-        barsets = barsets.reset_index()
-        barsets = barsets.set_index('symbol').rename_axis('Ticker')
+        logger.info("Fix below.")
+
+        barsets = api.get_bars(tickers, "1D").df
+
+        if barsets.index.nlevels == 1:
+            # Means single ticker or empty DataFrame, no "symbol" in the index
+            barsets = barsets.reset_index()  # "timestamp" will be a column now
+            # Possibly rename or handle the fact there's only one ticker:
+            # e.g., barsets["symbol"] = tickers if you want to forcibly insert it
+            barsets["symbol"] = tickers if isinstance(tickers, str) else tickers[0]
+            barsets = barsets.set_index("symbol").rename_axis("Ticker")
+        else:
+            # Means multiple tickers, multi-index with "symbol" + "timestamp"
+            barsets = barsets.reset_index()
+            barsets = barsets.set_index("symbol").rename_axis("Ticker")
 
         barsets = barsets.drop(columns=['open', 'high', 'low','volume', 'trade_count', 'vwap'])
         barsets = barsets.rename(columns={'close':'Closing Price (USD)'})
